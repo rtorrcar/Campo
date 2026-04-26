@@ -171,11 +171,18 @@ button:active{transform:scale(.97)}
   <div class="ll-brand">Torres Filoso</div>
   <div class="ll-title">🌿 Cuaderno de Campo</div>
   <div class="ll-sub">Ventas de Alcolea · Villarrobledo</div>
-  <div class="ugrid">
-    <button class="ubtn" onclick="login('Rocío','#8B2635')"><div class="av">👩‍🌾</div><div class="un">Rocío</div><div class="ur">Bodeguera</div></button>
-    <button class="ubtn" onclick="login('Esperanza','#4A7A4C')"><div class="av">🌿</div><div class="un">Esperanza</div><div class="ur">Viticultora</div></button>
-    <button class="ubtn" onclick="login('Trabajador','#C8A85A')"><div class="av">🧑‍🌾</div><div class="un">Trabajador</div><div class="ur">Viñedo</div></button>
-    <button class="ubtn" onclick="login('Invitado','#7F8C8D')"><div class="av">👁</div><div class="un">Invitado</div><div class="ur">Solo lectura</div></button>
+  <div class="ugrid" id="ugrid">
+    <button class="ubtn" onclick="tryLogin('Rocío','#8B2635')"><div class="av">👩‍🌾</div><div class="un">Rocío</div><div class="ur">Bodeguera</div></button>
+    <button class="ubtn" onclick="tryLogin('Esperanza','#4A7A4C')"><div class="av">🌿</div><div class="un">Esperanza</div><div class="ur">Viticultora</div></button>
+    <button class="ubtn" onclick="tryLogin('Trabajador','#C8A85A')"><div class="av">🧑‍🌾</div><div class="un">Trabajador</div><div class="ur">Viñedo</div></button>
+    <button class="ubtn" onclick="tryLogin('Invitado','#7F8C8D')"><div class="av">👁</div><div class="un">Invitado</div><div class="ur">Solo lectura</div></button>
+  </div>
+  <div id="pwd-box" style="display:none;margin-top:20px;width:100%;max-width:280px">
+    <div style="font-size:11px;color:rgba(255,255,255,.5);font-family:var(--mono);margin-bottom:8px;text-align:center">Introduce la contraseña</div>
+    <input type="password" id="pwd-input" placeholder="Contraseña" style="width:100%;padding:10px 14px;border-radius:10px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);color:#fff;font-size:14px;font-family:Georgia,serif;outline:none;margin-bottom:8px">
+    <div id="pwd-error" style="display:none;font-size:10px;color:#E74C3C;font-family:var(--mono);text-align:center;margin-bottom:6px">Contraseña incorrecta</div>
+    <button onclick="confirmPwd()" style="width:100%;padding:10px;border-radius:10px;border:none;background:var(--oro);color:#fff;font-size:13px;font-family:var(--mono);cursor:pointer;letter-spacing:1px">Entrar</button>
+    <button onclick="cancelPwd()" style="width:100%;padding:8px;border-radius:10px;border:1px solid rgba(255,255,255,.15);background:transparent;color:rgba(255,255,255,.5);font-size:11px;font-family:var(--mono);cursor:pointer;margin-top:6px">Cancelar</button>
   </div>
 </div>
 
@@ -195,6 +202,7 @@ button:active{transform:scale(.97)}
 <div id="tabs" style="display:none">
   <button class="tb act" onclick="goTab('obs')">👁 Obs</button>
   <button class="tb" onclick="goTab('tareas')">✅ Tareas</button>
+  <button class="tb" onclick="goTab('cal')">📅 Cal</button>
   <button class="tb" onclick="goTab('mapa')">🗺 Mapa</button>
   <button class="tb" onclick="goTab('hist')">📋 Hist</button>
   <button class="tb" onclick="goTab('clima')">🌡 Clima</button>
@@ -250,6 +258,58 @@ button:active{transform:scale(.97)}
       <div class="micst" id="mst-tarea">● Grabando...</div>
       <button class="savebtn" id="btn-tarea" onclick="saveTarea()">✅ Registrar tarea</button>
       <div class="warn" id="w-tarea" style="display:none">⚠ Selecciona parcela arriba</div>
+    </div>
+  </div>
+
+  <!-- CALENDARIO -->
+  <div id="p-cal" class="panel" style="padding:10px 13px 80px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <button onclick="calMes(-1)" style="padding:6px 14px;border-radius:8px;border:1.5px solid var(--cd);background:#fff;font-size:16px;cursor:pointer">‹</button>
+      <div id="cal-titulo" style="font-size:16px;font-weight:300;text-align:center"></div>
+      <button onclick="calMes(1)" style="padding:6px 14px;border-radius:8px;border:1.5px solid var(--cd);background:#fff;font-size:16px;cursor:pointer">›</button>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:4px">
+      <div style="text-align:center;font-size:9px;font-family:var(--mono);color:var(--tl);padding:3px 0">L</div>
+      <div style="text-align:center;font-size:9px;font-family:var(--mono);color:var(--tl);padding:3px 0">M</div>
+      <div style="text-align:center;font-size:9px;font-family:var(--mono);color:var(--tl);padding:3px 0">X</div>
+      <div style="text-align:center;font-size:9px;font-family:var(--mono);color:var(--tl);padding:3px 0">J</div>
+      <div style="text-align:center;font-size:9px;font-family:var(--mono);color:var(--tl);padding:3px 0">V</div>
+      <div style="text-align:center;font-size:9px;font-family:var(--mono);color:var(--tl);padding:3px 0">S</div>
+      <div style="text-align:center;font-size:9px;font-family:var(--mono);color:var(--tl);padding:3px 0">D</div>
+    </div>
+    <div id="cal-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px"></div>
+    <div id="cal-detalle" style="margin-top:12px">
+      <div style="text-align:center;font-size:11px;color:#ccc;font-family:var(--mono);padding:20px 0">Pulsa un día para ver detalle</div>
+    </div>
+    <div id="cal-nueva" class="card" style="margin-top:10px;display:none">
+      <div class="sl" style="margin-bottom:8px">📅 Nueva tarea prevista</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+        <div><label style="font-size:9px;font-family:var(--mono);color:var(--tl);text-transform:uppercase;display:block;margin-bottom:3px">Fecha</label>
+          <input type="date" id="cal-fecha"></div>
+        <div><label style="font-size:9px;font-family:var(--mono);color:var(--tl);text-transform:uppercase;display:block;margin-bottom:3px">Parcela</label>
+          <select id="cal-parcela" style="font-size:11px">
+            <option value="">Toda la finca</option>
+          </select>
+        </div>
+      </div>
+      <div style="margin-bottom:8px">
+        <label style="font-size:9px;font-family:var(--mono);color:var(--tl);text-transform:uppercase;display:block;margin-bottom:3px">Tarea</label>
+        <select id="cal-tipo" style="font-size:12px">
+          <option>Poda en verde</option>
+          <option>Poda en seco</option>
+          <option>Tratamiento fitosanitario</option>
+          <option>Azufrado</option>
+          <option>Cobrizado</option>
+          <option>Abonado</option>
+          <option>Gestión cubierta vegetal</option>
+          <option>Riego</option>
+          <option>Analítica suelo/hoja</option>
+          <option>Vendimia</option>
+          <option>Otra</option>
+        </select>
+      </div>
+      <input type="text" id="cal-nota" placeholder="Nota opcional..." style="margin-bottom:8px">
+      <button class="savebtn" onclick="guardarTareaCalendario()">📅 Guardar tarea prevista</button>
     </div>
   </div>
 
@@ -406,6 +466,7 @@ const TIPOS=[
   {id:'racimos',    label:'Conteo racimos', icon:'🍇',color:'#8E44AD'},
   {id:'muestra',    label:'Toma muestra',   icon:'🧪',color:'#1ABC9C'},
   {id:'poda_verde', label:'Poda verde',     icon:'✂️',color:'#16A085'},
+  {id:'cubierta',   label:'Cubierta vegetal',icon:'🌾',color:'#8BC34A'},
   {id:'nota_libre', label:'Nota libre',     icon:'📝',color:'#34495E'},
 ];
 const TMAP=Object.fromEntries(TIPOS.map(t=>[t.id,t]));
@@ -522,6 +583,29 @@ async function loadSupa(){
     await flushPend();
   }catch(e){syncWarn('⚠️ Sin conexión — modo local');setTimeout(hideSync,3000);}
 }
+
+// ── CONTRASEÑA ──
+const PASSWORDS={'Rocío':'viña2026','Esperanza':'viña2026','Trabajador':'campo2026','Invitado':'campo2026'};
+let pendingUser=null,pendingColor=null;
+function tryLogin(n,c){
+  pendingUser=n;pendingColor=c;
+  document.getElementById('pwd-box').style.display='block';
+  document.querySelector('.ugrid').style.display='none';
+  document.getElementById('pwd-input').value='';
+  document.getElementById('pwd-error').style.display='none';
+  setTimeout(()=>document.getElementById('pwd-input').focus(),100);
+}
+function confirmPwd(){
+  const pwd=document.getElementById('pwd-input').value;
+  if(pwd===PASSWORDS[pendingUser]){login(pendingUser,pendingColor);}
+  else{document.getElementById('pwd-error').style.display='block';document.getElementById('pwd-input').value='';}
+}
+function cancelPwd(){
+  document.getElementById('pwd-box').style.display='none';
+  document.querySelector('.ugrid').style.display='grid';
+  pendingUser=null;pendingColor=null;
+}
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&pendingUser)confirmPwd();});
 
 // ── LOGIN ──
 function login(n,c){
@@ -1002,9 +1086,94 @@ async function delNA(id){
   renderFichas();syncOK('✓ Borrado');setTimeout(hideSync,1200);
 }
 
+// ── CALENDARIO ──
+const MESES=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+let calYear=new Date().getFullYear(),calMonth=new Date().getMonth(),calDia=null;
+
+// Fases de luna hardcoded (cargadas de Google Calendar)
+const FASES_LUNA={
+  '2026-05-01':'🌕 Luna llena','2026-05-09':'🌗 C.Menguante','2026-05-16':'🌑 Luna nueva','2026-05-23':'🌓 C.Creciente',
+  '2026-05-31':'🌕 Luna llena','2026-06-08':'🌗 C.Menguante','2026-06-15':'🌑 Luna nueva','2026-06-21':'🌓 C.Creciente',
+  '2026-06-30':'🌕 Luna llena','2026-07-07':'🌗 C.Menguante','2026-07-14':'🌑 Luna nueva','2026-07-21':'🌓 C.Creciente','2026-07-29':'🌕 Luna llena',
+};
+
+let tareasPrevistas=[];
+
+function calMes(d){calMonth+=d;if(calMonth>11){calMonth=0;calYear++;}if(calMonth<0){calMonth=11;calYear--;}renderCal();}
+
+function initCal(){
+  // Populate parcela select
+  const sel=document.getElementById('cal-parcela');
+  if(sel&&sel.options.length===1)PARCELAS.forEach(p=>{const o=document.createElement('option');o.value=p.id;o.textContent=p.nombre;sel.appendChild(o);});
+  renderCal();
+}
+
+function renderCal(){
+  document.getElementById('cal-titulo').textContent=MESES[calMonth]+' '+calYear;
+  const primerDia=new Date(calYear,calMonth,1);
+  let dow=primerDia.getDay();dow=dow===0?6:dow-1;
+  const diasMes=new Date(calYear,calMonth+1,0).getDate();
+  const hoy=new Date().toISOString().split('T')[0];
+
+  // Index events by date
+  const evs={};
+  // Tareas hechas
+  tareas.forEach(t=>{const f=t.timestamp.split('T')[0];if(!evs[f])evs[f]=[];const p=PMAP[t.parcela_id];const ta=TAREAS_L.find(x=>x.id===t.tarea);evs[f].push({txt:(ta?.icon||'✅')+' '+(ta?.label||t.tarea),color:p?.color||'#27AE60',tipo:'hecha'});});
+  // Tareas previstas
+  tareasPrevistas.forEach(t=>{if(!evs[t.fecha])evs[t.fecha]=[];evs[t.fecha].push({txt:'📅 '+t.tipo,color:'#C8A85A',tipo:'prevista',nota:t.nota,parcela:t.parcela});});
+  // Fases luna
+  Object.entries(FASES_LUNA).forEach(([f,v])=>{if(!evs[f])evs[f]=[];evs[f].push({txt:v,color:'#7F8C8D',tipo:'luna'});});
+
+  let html='';
+  for(let i=0;i<dow;i++)html+='<div></div>';
+  for(let d=1;d<=diasMes;d++){
+    const f=calYear+'-'+String(calMonth+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    const dayEvs=evs[f]||[];
+    const esHoy=f===hoy,esSel=f===calDia;
+    const hasHecha=dayEvs.some(e=>e.tipo==='hecha');
+    const hasPrev=dayEvs.some(e=>e.tipo==='prevista');
+    const hasLuna=dayEvs.some(e=>e.tipo==='luna');
+    html+='<div onclick="selDia(\''+f+'\')" style="aspect-ratio:1;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;font-size:12px;font-family:var(--mono);background:'+(esSel?'var(--v)':esHoy?'#EDF7ED':'#fff')+';color:'+(esSel?'#fff':esHoy?'var(--v)':'var(--tx)')+';border:1.5px solid '+(esSel?'var(--v)':esHoy?'var(--vl)':'var(--cd)')+';font-weight:'+(esHoy||esSel?'700':'400')+'">'+d+
+      (dayEvs.length?'<div style="display:flex;gap:2px;margin-top:2px">'+(hasHecha?'<div style="width:5px;height:5px;border-radius:50%;background:#27AE60"></div>':'')+(hasPrev?'<div style="width:5px;height:5px;border-radius:50%;background:var(--oro)"></div>':'')+(hasLuna?'<div style="width:5px;height:5px;border-radius:50%;background:#7F8C8D"></div>':'')+'</div>':'')+'</div>';
+  }
+  document.getElementById('cal-grid').innerHTML=html;
+
+  if(calDia){
+    const dayEvs=evs[calDia]||[];
+    const dd=new Date(calDia+'T12:00:00');
+    const lbl=dd.toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'});
+    let det='<div class="card"><div style="font-size:13px;font-weight:600;margin-bottom:10px;text-transform:capitalize">'+lbl+'</div>';
+    if(!dayEvs.length)det+='<div style="font-size:11px;color:#ccc;font-family:var(--mono)">Sin actividad</div>';
+    else det+=dayEvs.map(e=>'<div style="display:flex;align-items:flex-start;gap:8px;padding:6px 0;border-bottom:1px solid var(--cd)"><div style="width:8px;height:8px;border-radius:50%;background:'+e.color+';flex-shrink:0;margin-top:4px"></div><div><div style="font-size:12px;font-family:var(--mono);font-weight:600">'+e.txt+'</div>'+(e.nota?'<div style="font-size:11px;color:var(--tl);font-style:italic">'+e.nota+'</div>':'')+'</div></div>').join('');
+    det+='</div>';
+    document.getElementById('cal-detalle').innerHTML=det;
+    document.getElementById('cal-nueva').style.display='block';
+    document.getElementById('cal-fecha').value=calDia;
+  } else {
+    document.getElementById('cal-detalle').innerHTML='<div style="text-align:center;font-size:11px;color:#ccc;font-family:var(--mono);padding:20px 0">Pulsa un día para ver detalle</div>';
+    document.getElementById('cal-nueva').style.display='none';
+  }
+}
+
+function selDia(f){calDia=calDia===f?null:f;renderCal();}
+
+async function guardarTareaCalendario(){
+  const fecha=document.getElementById('cal-fecha').value;
+  const tipo=document.getElementById('cal-tipo').value;
+  const parcela=document.getElementById('cal-parcela').value;
+  const nota=document.getElementById('cal-nota').value.trim();
+  if(!fecha)return;
+  const t={fecha,tipo,parcela,nota,usuario:user,ts:Date.now()};
+  tareasPrevistas.push(t);
+  document.getElementById('cal-nota').value='';
+  renderCal();
+  syncOK('📅 Tarea prevista guardada');setTimeout(hideSync,1500);
+  await dbsave('gcal_pending',{titulo:'📅 '+tipo+(parcela?(' · '+(PMAP[parcela]?.nombre||'')):''),fecha,descripcion:nota,prevista:true,usuario:user,timestamp:new Date().toISOString()});
+}
+
 // ── TABS ──
-const PTITLES={obs:'🌿 Observar',tareas:'✅ Tareas',mapa:'🗺 Mapa',hist:'📋 Historial',clima:'🌡 Clima',fichas:'🍇 Fichas'};
-const PTABS=['obs','tareas','mapa','hist','clima','fichas'];
+const PTITLES={obs:'🌿 Observar',tareas:'✅ Tareas',cal:'📅 Calendario',mapa:'🗺 Mapa',hist:'📋 Historial',clima:'🌡 Clima',fichas:'🍇 Fichas'};
+const PTABS=['obs','tareas','cal','mapa','hist','clima','fichas'];
 function goTab(name){
   curTab=name;
   document.querySelectorAll('.panel').forEach(p=>{p.classList.remove('act');p.style.display='none';});
@@ -1014,6 +1183,7 @@ function goTab(name){
   document.querySelectorAll('.tb')[PTABS.indexOf(name)].classList.add('act');
   document.getElementById('ptitle').textContent=PTITLES[name];
   if(name==='mapa')setTimeout(initMap,120);
+  if(name==='cal')setTimeout(initCal,50);
   if(name==='hist')renderHist();
   if(name==='clima'){loadClima();renderPluvHist();}
   if(name==='fichas')renderFichas();
