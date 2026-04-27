@@ -349,7 +349,7 @@ button:active{transform:scale(.97)}
             <option value="clorosis">🍋 Clorosis</option>
             <option value="acaros">🔬 Ácaros</option>
             <option value="plaga">⚠️ Plaga</option>
-            <option value="cepa_muerta">💀 Cepa muerta</option>
+            <option value="cepa_muerta">💀 Falta/cepa seca</option>
             <option value="riego_roto">💧 Riego roto</option>
             <option value="alambre">🔧 Alambre/poste</option>
             <option value="racimos">🍇 Racimos</option>
@@ -402,14 +402,18 @@ button:active{transform:scale(.97)}
           <option value="90">3 meses</option>
         </select>
       </div>
-      <div id="lluvia-chart" style="display:flex;align-items:flex-end;height:70px;gap:2px"></div>
-      <div id="lluvia-lbl" style="margin-top:4px;font-size:9px;color:var(--tl);font-family:var(--mono)"></div>
-      <div id="lluvia-totales" style="margin-top:6px;font-size:10px;font-family:var(--mono);color:var(--tl)"></div>
+      <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:4px">
+        <div id="lluvia-chart" style="display:flex;align-items:flex-end;height:120px;gap:4px"></div>
+      </div>
+      <div id="lluvia-lbl" style="margin-top:4px;font-size:10px;color:var(--tl);font-family:var(--mono)"></div>
+      <div id="lluvia-totales" style="margin-top:5px;font-size:10px;font-family:var(--mono);color:var(--tl);flex-wrap:wrap;display:flex;gap:6px"></div>
     </div>
     <div class="card">
       <div class="sl" style="margin-bottom:10px">Temperatura máx/mín</div>
-      <div id="temp-chart" style="display:flex;align-items:flex-end;height:70px;gap:2px"></div>
-      <div id="temp-lbl" style="margin-top:4px;font-size:9px;color:var(--tl);font-family:var(--mono)"></div>
+      <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:4px">
+        <div id="temp-chart" style="display:flex;align-items:flex-end;height:120px;gap:4px"></div>
+      </div>
+      <div id="temp-lbl" style="margin-top:4px;font-size:10px;color:var(--tl);font-family:var(--mono)"></div>
     </div>
     <div class="card">
       <div class="sl" style="margin-bottom:8px">Detalle últimos 7 días</div>
@@ -479,7 +483,7 @@ const TIPOS=[
   {id:'clorosis',   label:'Clorosis',       icon:'🍋',color:'#F39C12'},
   {id:'acaros',     label:'Ácaros',         icon:'🔬',color:'#E67E22'},
   {id:'plaga',      label:'Plaga/Enf.',     icon:'⚠️',color:'#C0392B'},
-  {id:'cepa_muerta',label:'Cepa muerta',    icon:'💀',color:'#7F8C8D'},
+  {id:'cepa_muerta',label:'Falta/cepa seca',  icon:'💀',color:'#7F8C8D'},
   {id:'riego_roto', label:'Riego roto',     icon:'💧',color:'#3498DB'},
   {id:'alambre',    label:'Alambre/poste',  icon:'🔧',color:'#95A5A6'},
   {id:'racimos',    label:'Conteo racimos', icon:'🍇',color:'#8E44AD'},
@@ -493,11 +497,12 @@ const TMAP=Object.fromEntries(TIPOS.map(t=>[t.id,t]));
 const TAREAS_L=[
   {id:'poda_verde',  label:'Poda en verde',           icon:'✂️'},
   {id:'poda_seco',   label:'Poda en seco',            icon:'🪚'},
+  {id:'plantacion',  label:'Plantación',              icon:'🌱'},
   {id:'tratamiento', label:'Tratamiento fitosanitario',icon:'💊'},
   {id:'azufrado',    label:'Azufrado',                icon:'🟡'},
   {id:'cobrizado',   label:'Cobrizado',               icon:'🔵'},
-  {id:'abonado',     label:'Abonado/fertilización',   icon:'🌱'},
-  {id:'cubierta',    label:'Gestión cubierta vegetal', icon:'🌿'},
+  {id:'abonado',     label:'Abonado/fertilización',   icon:'🫘'},
+  {id:'cubierta',    label:'Gestión cubierta vegetal', icon:'🌾'},
   {id:'riego',       label:'Riego',                   icon:'💧'},
   {id:'analitica',   label:'Analítica suelo/hoja',    icon:'🧪'},
   {id:'vendimia',    label:'Vendimia',                icon:'🍇'},
@@ -527,7 +532,7 @@ const LEGACY=[
 // STATE
 let user=null,userColor=null,parcela=null,tipoObs=null,selTarea=null,selFeno=null;
 let gps=null,grabando=false,recognition=null,fotoDataUrl=null;
-let obs=[],tareas=[],fichas={},fenoLog=[],pluvioLog=[],notasAnuales=[],notasGenerales=[],campanias={};
+let obs=[],tareas=[],fichas={},fenoLog=[],pluvioLog=[],notasAnuales=[],notasGenerales=[],campanias={},tareasPrevistas=[];
 let filterParc='all',mapInst=null,mapMarks=[];
 let editId=null,expRec=null,curTab='obs';
 let campaniaActual=new Date().getFullYear();
@@ -581,6 +586,7 @@ async function loadSupa(){
     const{data:sf}=await db.from('fichas').select('*');
     const{data:fen}=await db.from('fenologia').select('*').order('timestamp',{ascending:false}).limit(200);
     const{data:plu}=await db.from('pluvio').select('*').order('fecha',{ascending:false}).limit(100);
+    const{data:prev}=await db.from('gcal_pending').select('*').order('fecha',{ascending:false}).limit(200);
     const{data:na}=await db.from('notas_anuales').select('*').order('timestamp',{ascending:false});
     const{data:ng}=await db.from('notas_generales').select('*').order('timestamp',{ascending:false});
     const{data:ca}=await db.from('campanias').select('*');
@@ -594,6 +600,9 @@ async function loadSupa(){
     if(sf)sf.forEach(f=>fichas[f.parcela_id]=f);
     if(fen&&fen.length)fenoLog=fen;
     if(plu&&plu.length)pluvioLog=plu;
+    if(prev&&prev.length){
+      tareasPrevistas=prev.filter(r=>r.prevista).map(r=>({fecha:r.fecha,tipo:r.titulo?.replace('📅 ','').split(' · ')[0]||r.titulo,parcela:'',nota:r.descripcion,usuario:r.usuario,ts:r.id}));
+    }
     if(na)notasAnuales=na;
     if(ng)notasGenerales=ng;
     if(ca)ca.forEach(r=>{if(!campanias[r.parcela_id])campanias[r.parcela_id]={};campanias[r.parcela_id][r.year]=r;});
@@ -933,30 +942,39 @@ async function loadClima(){
       ?alertas.map(a=>'<div style="background:'+(a.n==='rojo'?'#FEF0F0':'#FFF8EE')+';border-left:4px solid '+(a.n==='rojo'?'#E74C3C':'#F39C12')+';border-radius:8px;padding:9px 12px;margin-bottom:7px;font-size:11px;font-family:var(--mono);color:'+(a.n==='rojo'?'#C0392B':'#E67E22')+'">'+a.t+'</div>').join('')
       :'<div style="background:#F0FBF0;border-left:4px solid #27AE60;border-radius:8px;padding:8px 12px;margin-bottom:7px;font-size:11px;font-family:var(--mono);color:#27AE60">✅ Sin alertas fitosanitarias (próximos 3 días)</div>';
 
-    // GRÁFICAS
+    // GRÁFICAS — barra fija de 22px para que siempre sea legible con scroll
     const dates=dy.time.slice(0,dias+3),tmax=dy.temperature_2m_max.slice(0,dias+3),tminA=dy.temperature_2m_min.slice(0,dias+3),lluvia=dy.precipitation_sum.slice(0,dias+3);
-    const maxL=Math.max(...lluvia,1);const step=Math.max(1,Math.floor(dates.length/8));
-    document.getElementById('lluvia-chart').innerHTML=lluvia.map((v,i)=>{
-      const h=Math.max(2,Math.round((v/maxL)*60));const dd=new Date(dates[i]+'T12:00:00');
-      return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:1px">'+
-        '<div style="font-size:7px;color:#3498DB;font-family:var(--mono);font-weight:600;min-height:10px">'+(v>0&&i%step===0?v.toFixed(1):'')+'</div>'+
-        '<div style="width:100%;height:'+h+'px;background:#3498DB;opacity:'+(v===0?0.12:0.85)+';border-radius:2px 2px 0 0"></div>'+
-        '<div style="font-size:7px;color:var(--tl);font-family:var(--mono)">'+(i%step===0?(dd.getDate()+'/'+(dd.getMonth()+1)):'')+'</div></div>';
+    const maxL=Math.max(...lluvia,1);
+    const bw=22; // px por día — fijo, scroll si hace falta
+    const step=Math.max(1,Math.floor(dates.length/10));
+    const lChart=document.getElementById('lluvia-chart');
+    lChart.style.width=(dates.length*bw)+'px';
+    lChart.style.minWidth='unset';
+    lChart.innerHTML=lluvia.map((v,i)=>{
+      const h=Math.max(2,Math.round((v/maxL)*90));const dd=new Date(dates[i]+'T12:00:00');
+      const showVal=v>0;const showLbl=i%step===0;
+      return '<div style="width:'+bw+'px;flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:1px">'+
+        '<div style="font-size:8px;color:#3498DB;font-family:var(--mono);font-weight:700;min-height:12px;white-space:nowrap">'+(showVal?v.toFixed(1):'')+'</div>'+
+        '<div style="width:'+(bw-4)+'px;height:'+h+'px;background:#3498DB;opacity:'+(v===0?0.12:0.9)+';border-radius:3px 3px 0 0"></div>'+
+        '<div style="font-size:8px;color:var(--tl);font-family:var(--mono);white-space:nowrap">'+(showLbl?(dd.getDate()+'/'+(dd.getMonth()+1)):'')+'</div></div>';
     }).join('');
     const totalPer=lluvia.reduce((a,b)=>a+b,0);
     const porMes={};lluvia.forEach((v,i)=>{const m=dates[i].substring(0,7);porMes[m]=(porMes[m]||0)+v;});
     document.getElementById('lluvia-lbl').textContent='Total: '+totalPer.toFixed(1)+' mm';
     document.getElementById('lluvia-totales').innerHTML=Object.entries(porMes).map(([m,v])=>'<span style="margin-right:8px"><b>'+m.substring(5)+'</b>: '+v.toFixed(1)+'mm</span>').join('');
     const maxT=Math.max(...tmax),minT=Math.min(...tminA),rng=maxT-minT||1;
-    document.getElementById('temp-chart').innerHTML=tmax.map((v,i)=>{
-      const hmax=Math.round(((v-minT)/rng)*50)+4,hmin=Math.round(((tminA[i]-minT)/rng)*50)+4;
-      const dd=new Date(dates[i]+'T12:00:00');
-      return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:1px">'+
-        '<div style="font-size:7px;color:#E74C3C;font-family:var(--mono);min-height:10px">'+(i%step===0?Math.round(v)+'°':'')+'</div>'+
-        '<div style="width:60%;height:'+hmax+'px;background:#E74C3C;opacity:.8;border-radius:2px 2px 0 0"></div>'+
-        '<div style="width:60%;height:'+hmin+'px;background:#3498DB;opacity:.7;border-radius:0 0 2px 2px"></div>'+
-        '<div style="font-size:7px;color:#3498DB;font-family:var(--mono);min-height:10px">'+(i%step===0?Math.round(tminA[i])+'°':'')+'</div>'+
-        '<div style="font-size:7px;color:var(--tl);font-family:var(--mono)">'+(i%step===0?(dd.getDate()+'/'+(dd.getMonth()+1)):'')+'</div></div>';
+    const tChart=document.getElementById('temp-chart');
+    tChart.style.width=(dates.length*bw)+'px';
+    tChart.style.minWidth='unset';
+    tChart.innerHTML=tmax.map((v,i)=>{
+      const hmax=Math.round(((v-minT)/rng)*80)+6,hmin=Math.round(((tminA[i]-minT)/rng)*30)+4;
+      const dd=new Date(dates[i]+'T12:00:00');const showLbl=i%step===0;
+      return '<div style="width:'+bw+'px;flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:1px">'+
+        '<div style="font-size:8px;color:#E74C3C;font-family:var(--mono);min-height:12px;white-space:nowrap">'+(showLbl?Math.round(v)+'°':'')+'</div>'+
+        '<div style="width:'+(bw-6)+'px;height:'+hmax+'px;background:#E74C3C;opacity:.85;border-radius:3px 3px 0 0"></div>'+
+        '<div style="width:'+(bw-6)+'px;height:'+hmin+'px;background:#3498DB;opacity:.75;border-radius:0 0 3px 3px"></div>'+
+        '<div style="font-size:8px;color:#3498DB;font-family:var(--mono);min-height:12px;white-space:nowrap">'+(showLbl?Math.round(tminA[i])+'°':'')+'</div>'+
+        '<div style="font-size:8px;color:var(--tl);font-family:var(--mono);white-space:nowrap">'+(showLbl?(dd.getDate()+'/'+(dd.getMonth()+1)):'')+'</div></div>';
     }).join('');
     document.getElementById('temp-lbl').innerHTML='<span style="color:#E74C3C">■</span> Máx &nbsp;<span style="color:#3498DB">■</span> Mín · Open-Meteo/ECMWF';
     const last7=dy.time.slice(Math.max(0,ti-6),ti+1);
@@ -1013,10 +1031,10 @@ function renderFichas(){
         '<div class="ff"><label>Altitud (m)</label><input id="f-'+p.id+'-alt" value="'+esc(f.altitud||'')+'"></div>'+
         '<div class="ff"><label>Orientación</label><input id="f-'+p.id+'-ori" value="'+esc(f.orientacion||'')+'"></div>'+
         '<div class="ff"><label>Marco (m)</label><input id="f-'+p.id+'-marco" value="'+esc(f.marco||'')+'"></div>'+
+        '<div class="ff"><label>Superficie (ha)</label><input type="number" id="f-'+p.id+'-ha" value="'+esc(f.ha||'')+'" step="0.01" placeholder="0.00"></div>'+
         '<div class="ff full"><label>Notas fijas</label><input id="f-'+p.id+'-notas" value="'+esc(f.notas||'')+'"></div>'+
       '</div>'+
       '<button class="fsave" onclick="saveFicha(\''+p.id+'\')">💾 Guardar datos fijos</button></details>'+
-      // Campaña
       '<div style="margin-top:12px;border-top:1px solid var(--cd);padding-top:12px">'+
       '<div class="sl" style="margin-bottom:8px">📊 Campaña '+yr+'/'+(yr+1)+'</div>'+
       '<div class="fgrid">'+
@@ -1026,7 +1044,6 @@ function renderFichas(){
         '<div class="ff"><label>Peso racimo (g)</label><input type="number" id="m-'+p.id+'-pracimo" value="'+(camp.peso_racimo||'')+'" placeholder="g"></div>'+
         '<div class="ff"><label>Racimos/cepa</label><input type="number" id="m-'+p.id+'-nracimos" value="'+(camp.n_racimos||'')+'" placeholder="0"></div>'+
         '<div class="ff"><label>Grado alcohólico</label><input type="number" id="m-'+p.id+'-grado" value="'+(camp.grado||'')+'" step="0.1" placeholder="°"></div>'+
-        '<div class="ff"><label>Superficie (ha)</label><input type="number" id="m-'+p.id+'-ha" value="'+(camp.ha||f.ha||'')+'" step="0.01"></div>'+
         '<div class="ff"><label>Fecha vendimia</label><input type="date" id="m-'+p.id+'-fvend" value="'+(camp.fecha_vendimia||'')+'"></div>'+
         '<div class="ff full"><label>Notas campaña</label><input id="m-'+p.id+'-ncamp" value="'+esc(camp.notas_camp||'')+'"></div>'+
       '</div>'+
@@ -1072,13 +1089,13 @@ function chgYr(d){campaniaActual+=d;renderFichas();}
 // FICHA SAVE
 async function saveFicha(pid){
   const g=k=>document.getElementById('f-'+pid+'-'+k)?.value||'';
-  const r={parcela_id:pid,variedad:g('var'),clon:g('clon'),portainjerto:g('port'),anio:g('anio'),suelo:g('suelo'),altitud:g('alt'),orientacion:g('ori'),marco:g('marco'),notas:g('notas')};
+  const r={parcela_id:pid,variedad:g('var'),clon:g('clon'),portainjerto:g('port'),anio:g('anio'),suelo:g('suelo'),altitud:g('alt'),orientacion:g('ori'),marco:g('marco'),notas:g('notas'),ha:g('ha')||null};
   fichas[pid]={...fichas[pid]||{},...r};
   await dbupsert('fichas',r,'parcela_id');
 }
 async function saveMetr(pid){
   const gm=k=>document.getElementById('m-'+pid+'-'+k)?.value||null;
-  const r={parcela_id:pid,year:campaniaActual,kg_total:gm('kg'),n_cepas:gm('cepas'),peso_madera:gm('madera'),peso_racimo:gm('pracimo'),n_racimos:gm('nracimos'),grado:gm('grado'),ha:gm('ha'),fecha_vendimia:gm('fvend'),notas_camp:gm('ncamp')};
+  const r={parcela_id:pid,year:campaniaActual,kg_total:gm('kg'),n_cepas:gm('cepas'),peso_madera:gm('madera'),peso_racimo:gm('pracimo'),n_racimos:gm('nracimos'),grado:gm('grado'),fecha_vendimia:gm('fvend'),notas_camp:gm('ncamp')};
   if(!campanias[pid])campanias[pid]={};campanias[pid][campaniaActual]=r;
   await dbupsert('campanias',r,'parcela_id,year');
   renderFichas();
@@ -1160,7 +1177,7 @@ const GCAL_EVENTS=[
   {fecha:'2026-07-29',txt:'🌕 Luna llena',color:'#7F8C8D',cal:'Luna'},
 ];
 
-let tareasPrevistas=[];
+// calendario state
 
 function calMes(d){calMonth+=d;if(calMonth>11){calMonth=0;calYear++;}if(calMonth<0){calMonth=11;calYear--;}renderCal();}
 
