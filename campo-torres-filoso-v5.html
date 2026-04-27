@@ -1,0 +1,1276 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#1C2B1D">
+<title>🌿 Campo · Torres Filoso</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{--v:#1C2B1D;--vm:#2E4A30;--vl:#4A7A4C;--c:#F4EFE4;--cd:#E0D8CC;--oro:#C8A85A;--tx:#2A2A2A;--tl:#888;--mono:'DM Mono',monospace}
+html,body{height:100%;overflow:hidden;font-family:Georgia,serif;background:var(--c);color:var(--tx)}
+#app{height:100vh;display:flex;flex-direction:column;max-width:520px;margin:0 auto}
+/* LOGIN */
+#login{position:fixed;inset:0;background:var(--v);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999;padding:32px 24px}
+.ll-brand{font-size:10px;letter-spacing:4px;color:rgba(255,255,255,.4);text-transform:uppercase;font-family:var(--mono);margin-bottom:6px}
+.ll-title{font-size:28px;font-weight:300;color:#fff;margin-bottom:4px}
+.ll-sub{font-size:12px;color:rgba(255,255,255,.3);font-style:italic;margin-bottom:36px}
+.ugrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;max-width:280px}
+.ubtn{padding:16px 10px;border-radius:12px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.06);color:#fff;cursor:pointer;text-align:center;font-family:Georgia,serif}
+.ubtn .av{font-size:24px;margin-bottom:6px}
+.ubtn .un{font-size:14px}
+.ubtn .ur{font-size:10px;opacity:.4;font-family:var(--mono);margin-top:2px}
+/* HEADER */
+#hdr{background:var(--v);padding:10px 14px 8px;color:#fff;flex-shrink:0}
+.hdr-row{display:flex;justify-content:space-between;align-items:center}
+.hdr-bs{font-size:9px;letter-spacing:3px;opacity:.35;text-transform:uppercase;font-family:var(--mono)}
+.hdr-pt{font-size:17px;font-weight:300;margin-top:1px}
+.hdr-r{display:flex;align-items:center;gap:8px}
+.gdot{width:7px;height:7px;border-radius:50%;background:#555}
+.gdot.on{background:#5EE882;box-shadow:0 0 5px #5EE882}
+.gtxt{font-size:9px;font-family:var(--mono);opacity:.55;color:#fff}
+.ubadge{display:flex;align-items:center;gap:5px;padding:3px 9px;border-radius:20px;border:1px solid rgba(255,255,255,.14);cursor:pointer}
+.ubadge .ud{width:7px;height:7px;border-radius:50%}
+.ubadge .un{font-size:10px;font-family:var(--mono);opacity:.8;color:#fff}
+/* PARCELA BAR */
+#pbar{background:var(--vm);padding:7px 12px;overflow-x:auto;white-space:nowrap;flex-shrink:0;scrollbar-width:none}
+#pbar::-webkit-scrollbar{display:none}
+.pchip{display:inline-block;padding:3px 10px;border-radius:20px;margin-right:5px;font-size:10px;font-family:var(--mono);cursor:pointer;background:rgba(255,255,255,.08);color:rgba(255,255,255,.65);border:1px solid transparent}
+.pchip.act{color:#fff;font-weight:500;border-color:rgba(255,255,255,.35)}
+/* TABS */
+#tabs{display:flex;background:var(--v);border-top:1px solid rgba(255,255,255,.07);flex-shrink:0}
+.tb{flex:1;padding:8px 2px;border:none;background:transparent;color:rgba(255,255,255,.38);font-size:10px;cursor:pointer;font-family:var(--mono)}
+.tb.act{color:#fff;border-bottom:2px solid var(--oro)}
+/* CONTENT */
+#content{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.panel{display:none;padding:12px 13px 90px}
+.panel.act{display:block}
+/* COMMON */
+.sl{font-size:9px;color:var(--tl);letter-spacing:3px;text-transform:uppercase;margin-bottom:7px;font-family:var(--mono)}
+.card{background:#fff;border-radius:11px;padding:12px 13px;margin-bottom:8px}
+.savebtn{width:100%;padding:12px;border-radius:11px;border:none;background:linear-gradient(135deg,var(--v),var(--vm));color:#fff;font-size:13px;cursor:pointer;font-family:var(--mono);letter-spacing:1px}
+.savebtn:disabled{background:var(--cd);color:#aaa;cursor:not-allowed}
+.savebtn.ok{background:#27AE60}
+.savebtn.outline{background:transparent;border:1.5px solid var(--v);color:var(--v)}
+.warn{font-size:10px;color:#E67E22;margin-top:5px;text-align:center;font-family:var(--mono)}
+textarea,input[type=text],input[type=number],input[type=date],select{width:100%;padding:8px 10px;border-radius:8px;border:1.5px solid var(--cd);font-size:13px;font-family:Georgia,serif;background:#fff;color:var(--tx);outline:none}
+textarea{resize:none}
+/* TIPOS */
+.tgrid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px}
+.tbtn{padding:8px 10px;border-radius:9px;border:1.5px solid var(--cd);background:#fff;cursor:pointer;text-align:left;font-size:11px;color:#555;font-family:Georgia,serif}
+.tbtn.act{font-weight:700}
+/* MIC */
+.nwrap{position:relative;margin-bottom:10px}
+.nwrap textarea{padding-right:44px}
+.micbtn{position:absolute;right:7px;top:7px;width:32px;height:32px;border-radius:50%;border:none;background:var(--v);color:#fff;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.micbtn.rec{background:#C0392B;animation:pulse 1s infinite}
+.micst{font-size:9px;color:#C0392B;font-family:var(--mono);margin-top:2px;display:none}
+.micst.on{display:block;animation:blink 1s infinite}
+/* GPS TOGGLE */
+.gps-toggle{display:flex;align-items:center;gap:8px;margin-bottom:10px;font-size:11px;color:var(--tl);font-family:var(--mono)}
+.tsw{position:relative;width:34px;height:18px;flex-shrink:0}
+.tsw input{opacity:0;width:0;height:0}
+.tsw .tr{position:absolute;inset:0;border-radius:18px;background:#ccc;cursor:pointer;transition:.3s}
+.tsw input:checked+.tr{background:var(--vl)}
+.tsw .tr:before{content:"";position:absolute;height:14px;width:14px;left:2px;bottom:2px;border-radius:50%;background:#fff;transition:.3s}
+.tsw input:checked+.tr:before{transform:translateX(16px)}
+/* FOTO */
+.foto-btns{display:flex;gap:7px;margin-bottom:10px}
+.foto-lbl{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:9px;border-radius:9px;border:1.5px dashed var(--cd);background:#fff;cursor:pointer;font-size:12px;color:#777;font-family:var(--mono)}
+.foto-prev{position:relative;display:inline-block;margin-bottom:10px}
+.foto-prev img{width:80px;height:80px;object-fit:cover;border-radius:8px;border:2px solid var(--vl)}
+.foto-del{position:absolute;top:-6px;right:-6px;width:18px;height:18px;border-radius:50%;border:none;background:#E74C3C;color:#fff;font-size:10px;cursor:pointer;line-height:18px;text-align:center}
+/* TAREAS */
+.tlist{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+.tlbtn{padding:10px 13px;border-radius:9px;border:1.5px solid var(--cd);background:#fff;color:#444;font-size:13px;text-align:left;cursor:pointer;font-family:Georgia,serif}
+.tlbtn.act{border-color:var(--v);background:var(--v);color:#fff;font-weight:600}
+/* MAP */
+#map{width:100%}
+.map-leg{position:absolute;bottom:12px;left:8px;right:8px;background:rgba(28,43,29,.9);border-radius:10px;padding:8px 12px;color:#fff;font-family:var(--mono);font-size:9px;display:flex;flex-wrap:wrap;gap:5px;z-index:1000}
+.leg-it{display:flex;align-items:center;gap:4px}
+.leg-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+/* HISTORIAL */
+.stats3{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:12px}
+.sc{background:#fff;border-radius:9px;padding:9px;text-align:center}
+.snum{font-size:20px;font-weight:300;color:var(--v)}
+.slbl{font-size:8px;color:var(--tl);font-family:var(--mono);letter-spacing:1px}
+.fbar{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px}
+.fchip{padding:3px 10px;border-radius:20px;border:none;font-size:10px;background:var(--cd);color:#666;cursor:pointer;font-family:var(--mono)}
+.fchip.act{background:var(--v);color:#fff}
+.rec{background:#fff;border-radius:10px;padding:9px 12px;margin-bottom:7px;cursor:pointer;border-left:4px solid #ccc}
+.rec-top{display:flex;justify-content:space-between;align-items:flex-start}
+.rec-tipo{font-size:12px;font-weight:700}
+.rec-meta{text-align:right}
+.rec-time{font-size:9px;color:var(--tl);font-family:var(--mono)}
+.rec-user{font-size:9px;font-family:var(--mono);margin-top:1px}
+.rec-parc{font-size:10px;font-family:var(--mono);margin-top:3px}
+.rec-nota{font-size:11px;color:#666;margin-top:4px;font-style:italic;line-height:1.4}
+.rec-gps{font-size:9px;color:#bbb;margin-top:4px;font-family:var(--mono)}
+.rec-acts{display:flex;gap:6px;margin-top:8px}
+.ract{flex:1;padding:6px;border-radius:7px;border:none;font-size:11px;cursor:pointer;font-family:var(--mono)}
+/* CLIMA */
+.cbig{background:var(--v);border-radius:12px;padding:14px;color:#fff;margin-bottom:12px}
+.ctemp{font-size:36px;font-weight:300}
+.cdesc{font-size:12px;opacity:.65;font-style:italic;margin-top:2px}
+.crows{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:10px}
+.ci{text-align:center;background:rgba(255,255,255,.09);border-radius:8px;padding:7px 3px}
+.ci .v{font-size:13px;font-family:var(--mono)}
+.ci .l{font-size:8px;opacity:.45;font-family:var(--mono);margin-top:2px}
+/* FICHAS */
+.ficha{background:#fff;border-radius:11px;padding:12px;margin-bottom:10px}
+.fhdr{display:flex;align-items:center;gap:9px;margin-bottom:10px}
+.fdot{width:13px;height:13px;border-radius:50%;flex-shrink:0}
+.ftitle{font-size:15px;font-weight:600}
+.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.ff label{font-size:9px;color:var(--tl);font-family:var(--mono);letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:3px}
+.ff input{padding:6px 8px;border-radius:7px;border:1.5px solid var(--cd);font-size:12px;font-family:Georgia,serif;background:var(--c);color:var(--tx);outline:none;width:100%}
+.ff.full{grid-column:1/-1}
+.fsave{margin-top:10px;padding:8px;border-radius:8px;border:none;background:var(--v);color:#fff;font-family:var(--mono);font-size:10px;letter-spacing:1px;cursor:pointer;width:100%}
+/* FENO */
+.feno-g{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:12px}
+.fbtn{padding:9px;border-radius:9px;border:1.5px solid var(--cd);background:#fff;cursor:pointer;text-align:center;font-size:11px;color:#555;font-family:Georgia,serif}
+.fbtn.act{border-color:var(--oro);background:#FDF8ED;color:var(--v);font-weight:700}
+/* MODAL */
+#modal{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:2000;display:none;align-items:flex-end;justify-content:center}
+#modal.on{display:flex}
+#mbox{background:var(--c);border-radius:18px 18px 0 0;padding:20px 16px 32px;width:100%;max-width:520px;max-height:80vh;overflow-y:auto}
+.mtitle{font-size:16px;font-weight:600;margin-bottom:14px}
+.mbtns{display:flex;gap:8px;margin-top:14px}
+/* SYNC */
+#sync{position:fixed;bottom:0;left:50%;transform:translateX(-50%);max-width:520px;width:100%;color:#fff;font-size:10px;font-family:var(--mono);padding:5px 14px;text-align:center;opacity:0;transition:opacity .3s;z-index:500;background:var(--vm)}
+#sync.on{opacity:1}
+/* NOTAS */
+.nota-item{background:var(--c);border-radius:8px;padding:8px 10px;margin-bottom:5px}
+.nota-actions{display:flex;gap:4px;margin-top:4px}
+.nota-btn{padding:2px 8px;border-radius:5px;font-size:10px;cursor:pointer;font-family:var(--mono)}
+/* CAMPANIA */
+.camp-table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:10px}
+.camp-table th{padding:4px 0;text-align:left;border-bottom:1.5px solid var(--cd);color:var(--tl)}
+.camp-table td{padding:5px 0;border-bottom:1px solid var(--cd)}
+/* RAVAZ */
+.ravaz{background:var(--v);color:#fff;border-radius:8px;padding:10px;text-align:center;margin-top:10px}
+.ravaz-n{font-size:24px;font-weight:300}
+.ravaz-l{font-size:9px;opacity:.6;margin-top:2px}
+.ravaz-i{font-size:11px;opacity:.8;margin-top:4px}
+/* PLUVIO */
+.pluv-row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--cd);font-family:var(--mono);font-size:11px}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 3px rgba(192,57,43,.25)}50%{box-shadow:0 0 0 7px rgba(192,57,43,.08)}}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+button:active{transform:scale(.97)}
+</style>
+</head>
+<body>
+<div id="app">
+
+<div id="login">
+  <div class="ll-brand">Torres Filoso</div>
+  <div class="ll-title">🌿 Cuaderno de Campo</div>
+  <div class="ll-sub">Ventas de Alcolea · Villarrobledo</div>
+  <div class="ugrid" id="ugrid">
+    <button class="ubtn" onclick="tryLogin('Rocío','#8B2635')"><div class="av">👩‍🌾</div><div class="un">Rocío</div><div class="ur">Bodeguera</div></button>
+    <button class="ubtn" onclick="tryLogin('Esperanza','#4A7A4C')"><div class="av">🌿</div><div class="un">Esperanza</div><div class="ur">Viticultora</div></button>
+    <button class="ubtn" onclick="tryLogin('Trabajador','#C8A85A')"><div class="av">🧑‍🌾</div><div class="un">Trabajador</div><div class="ur">Viñedo</div></button>
+    <button class="ubtn" onclick="tryLogin('Invitado','#7F8C8D')"><div class="av">👁</div><div class="un">Invitado</div><div class="ur">Solo lectura</div></button>
+  </div>
+  <div id="pwd-box" style="display:none;margin-top:20px;width:100%;max-width:280px">
+    <div style="font-size:11px;color:rgba(255,255,255,.5);font-family:var(--mono);margin-bottom:8px;text-align:center">Introduce la contraseña</div>
+    <input type="password" id="pwd-input" placeholder="Contraseña" style="width:100%;padding:10px 14px;border-radius:10px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);color:#fff;font-size:14px;font-family:Georgia,serif;outline:none;margin-bottom:8px">
+    <div id="pwd-error" style="display:none;font-size:10px;color:#E74C3C;font-family:var(--mono);text-align:center;margin-bottom:6px">Contraseña incorrecta</div>
+    <button onclick="confirmPwd()" style="width:100%;padding:10px;border-radius:10px;border:none;background:var(--oro);color:#fff;font-size:13px;font-family:var(--mono);cursor:pointer;letter-spacing:1px">Entrar</button>
+    <button onclick="cancelPwd()" style="width:100%;padding:8px;border-radius:10px;border:1px solid rgba(255,255,255,.15);background:transparent;color:rgba(255,255,255,.5);font-size:11px;font-family:var(--mono);cursor:pointer;margin-top:6px">Cancelar</button>
+  </div>
+</div>
+
+<div id="hdr" style="display:none">
+  <div class="hdr-row">
+    <div><div class="hdr-bs">Torres Filoso · Campo</div><div class="hdr-pt" id="ptitle">🌿 Observar</div></div>
+    <div class="hdr-r">
+      <div class="gdot" id="gdot"></div>
+      <div class="gtxt" id="gtxt">GPS...</div>
+      <div class="ubadge" onclick="logout()"><div class="ud" id="udot"></div><div class="un" id="uname"></div></div>
+    </div>
+  </div>
+</div>
+
+<div id="pbar" style="display:none"></div>
+
+<div id="tabs" style="display:none">
+  <button class="tb act" onclick="goTab('obs')">👁 Obs</button>
+  <button class="tb" onclick="goTab('tareas')">✅ Tareas</button>
+  <button class="tb" onclick="goTab('mapa')">🗺 Mapa</button>
+  <button class="tb" onclick="goTab('hist')">📋 Hist</button>
+  <button class="tb" onclick="goTab('clima')">🌡 Clima</button>
+  <button class="tb" onclick="goTab('fichas')">🍇 Fichas</button>
+</div>
+
+<div id="content" style="display:none">
+
+  <!-- OBS -->
+  <div id="p-obs" class="panel act">
+    <div class="sl">Tipo de observación</div>
+    <div class="tgrid" id="tipos-grid"></div>
+    <div class="sl">Nota</div>
+    <div class="nwrap">
+      <textarea id="nota-obs" rows="3" placeholder="Dicta o escribe..."></textarea>
+      <button class="micbtn" id="mic-obs" onclick="toggleMic('obs')">🎙</button>
+    </div>
+    <div class="micst" id="mst-obs">● Grabando...</div>
+    <div class="gps-toggle">
+      <label class="tsw"><input type="checkbox" id="gps-on" checked><span class="tr"></span></label>
+      <span id="gps-lbl">Guardar GPS</span>
+    </div>
+    <div class="sl">Foto</div>
+    <div class="foto-btns">
+      <label class="foto-lbl" for="foto-cam">📷 Cámara</label>
+      <input type="file" id="foto-cam" accept="image/*" capture="environment" style="display:none" onchange="prevFoto(this)">
+      <label class="foto-lbl" for="foto-gal">🖼 Galería</label>
+      <input type="file" id="foto-gal" accept="image/*" style="display:none" onchange="prevFoto(this)">
+    </div>
+    <div id="foto-prev" class="foto-prev" style="display:none">
+      <img id="foto-img"><button class="foto-del" onclick="clearFoto()">×</button>
+    </div>
+    <button class="savebtn" id="btn-obs" onclick="saveObs()">📍 Guardar observación</button>
+    <div class="warn" id="w-obs" style="display:none">⚠ Selecciona un tipo</div>
+    <div style="margin-top:18px">
+      <div class="sl">Estado fenológico</div>
+      <div class="feno-g" id="feno-grid"></div>
+      <button class="savebtn" id="btn-feno" onclick="saveFeno()" disabled>🌱 Registrar fenología</button>
+      <div class="warn" id="w-feno" style="display:none">⚠ Selecciona parcela y estado</div>
+    </div>
+  </div>
+
+  <!-- TAREAS + CALENDARIO -->
+  <div id="p-tareas" class="panel">
+    <!-- CALENDARIO -->
+    <div style="margin-bottom:14px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <button onclick="calMes(-1)" style="padding:5px 12px;border-radius:8px;border:1.5px solid var(--cd);background:#fff;font-size:15px;cursor:pointer">‹</button>
+        <div id="cal-titulo" style="font-size:15px;font-weight:300;text-align:center;font-family:Georgia,serif"></div>
+        <button onclick="calMes(1)" style="padding:5px 12px;border-radius:8px;border:1.5px solid var(--cd);background:#fff;font-size:15px;cursor:pointer">›</button>
+      </div>
+      <!-- Leyenda calendarios -->
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:6px;font-size:9px;font-family:var(--mono);color:var(--tl)">
+        <span><span style="color:#27AE60">●</span> Tareas app</span>
+        <span><span style="color:#3498DB">●</span> Viña Grande</span>
+        <span><span style="color:#9B59B6">●</span> Cuaderno Esperanza</span>
+        <span><span style="color:#C8A85A">●</span> Previstas</span>
+        <span><span style="color:#7F8C8D">●</span> Luna</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:3px">
+        <div style="text-align:center;font-size:9px;font-family:var(--mono);color:var(--tl)">L</div>
+        <div style="text-align:center;font-size:9px;font-family:var(--mono);color:var(--tl)">M</div>
+        <div style="text-align:center;font-size:9px;font-family:var(--mono);color:var(--tl)">X</div>
+        <div style="text-align:center;font-size:9px;font-family:var(--mono);color:var(--tl)">J</div>
+        <div style="text-align:center;font-size:9px;font-family:var(--mono);color:var(--tl)">V</div>
+        <div style="text-align:center;font-size:9px;font-family:var(--mono);color:var(--tl)">S</div>
+        <div style="text-align:center;font-size:9px;font-family:var(--mono);color:var(--tl)">D</div>
+      </div>
+      <div id="cal-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px"></div>
+      <div id="cal-detalle" style="margin-top:10px">
+        <div style="text-align:center;font-size:11px;color:#ccc;font-family:var(--mono);padding:12px 0">Pulsa un día para ver detalle</div>
+      </div>
+      <div id="cal-nueva" class="card" style="margin-top:8px;display:none">
+        <div class="sl" style="margin-bottom:8px">📅 Nueva tarea prevista</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+          <div><label style="font-size:9px;font-family:var(--mono);color:var(--tl);text-transform:uppercase;display:block;margin-bottom:3px">Fecha</label>
+            <input type="date" id="cal-fecha"></div>
+          <div><label style="font-size:9px;font-family:var(--mono);color:var(--tl);text-transform:uppercase;display:block;margin-bottom:3px">Parcela</label>
+            <select id="cal-parcela" style="font-size:11px">
+              <option value="">Toda la finca</option>
+            </select>
+          </div>
+        </div>
+        <div style="margin-bottom:8px">
+          <label style="font-size:9px;font-family:var(--mono);color:var(--tl);text-transform:uppercase;display:block;margin-bottom:3px">Tarea</label>
+          <select id="cal-tipo" style="font-size:12px">
+            <option>Poda en verde</option><option>Poda en seco</option>
+            <option>Tratamiento fitosanitario</option><option>Azufrado</option>
+            <option>Cobrizado</option><option>Abonado</option>
+            <option>Gestión cubierta vegetal</option><option>Riego</option>
+            <option>Analítica suelo/hoja</option><option>Vendimia</option><option>Otra</option>
+          </select>
+        </div>
+        <input type="text" id="cal-nota" placeholder="Nota opcional..." style="margin-bottom:8px">
+        <button class="savebtn" onclick="guardarTareaCalendario()">📅 Guardar en calendario</button>
+      </div>
+    </div>
+    <div style="border-top:1.5px solid var(--cd);padding-top:14px">
+      <div class="sl">Registrar tarea realizada</div>
+      <div class="tlist" id="tareas-grid"></div>
+      <div id="tarea-extra" style="display:none">
+        <div class="sl">Detalle</div>
+        <div class="nwrap">
+          <textarea id="nota-tarea" rows="2" placeholder="Hileras, zona, cantidad..."></textarea>
+          <button class="micbtn" id="mic-tarea" onclick="toggleMic('tarea')">🎙</button>
+        </div>
+        <div class="micst" id="mst-tarea">● Grabando...</div>
+        <button class="savebtn" id="btn-tarea" onclick="saveTarea()">✅ Registrar tarea</button>
+        <div class="warn" id="w-tarea" style="display:none">⚠ Selecciona parcela arriba</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAPA -->
+  <div id="p-mapa" class="panel" style="padding:0;position:relative">
+    <div style="padding:8px 10px;background:#fff;display:flex;gap:8px;align-items:center;border-bottom:1px solid var(--cd)">
+      <input type="date" id="mapa-desde" style="flex:1;padding:5px 8px;border-radius:7px;border:1.5px solid var(--cd);font-size:11px;font-family:var(--mono)">
+      <span style="font-size:10px;color:var(--tl);font-family:var(--mono)">→</span>
+      <input type="date" id="mapa-hasta" style="flex:1;padding:5px 8px;border-radius:7px;border:1.5px solid var(--cd);font-size:11px;font-family:var(--mono)">
+      <button onclick="renderMapMarks()" style="padding:5px 10px;border-radius:7px;border:none;background:var(--v);color:#fff;font-size:10px;font-family:var(--mono);cursor:pointer">Ver</button>
+    </div>
+    <div id="map"></div>
+    <div class="map-leg" id="map-leg"></div>
+  </div>
+
+  <!-- HISTORIAL -->
+  <div id="p-hist" class="panel">
+    <div class="stats3">
+      <div class="sc"><div class="snum" id="s-hoy">0</div><div class="slbl">HOY</div></div>
+      <div class="sc"><div class="snum" id="s-tar">0</div><div class="slbl">TAREAS</div></div>
+      <div class="sc"><div class="snum" id="s-tot">0</div><div class="slbl">TOTAL</div></div>
+    </div>
+    <div class="card">
+      <div class="sl" style="margin-bottom:8px">Filtros</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+        <div><label style="font-size:9px;font-family:var(--mono);color:var(--tl);text-transform:uppercase;display:block;margin-bottom:3px">Desde</label><input type="date" id="f-desde"></div>
+        <div><label style="font-size:9px;font-family:var(--mono);color:var(--tl);text-transform:uppercase;display:block;margin-bottom:3px">Hasta</label><input type="date" id="f-hasta"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+        <div><label style="font-size:9px;font-family:var(--mono);color:var(--tl);text-transform:uppercase;display:block;margin-bottom:3px">Tipo</label>
+          <select id="f-tipo" style="font-size:11px">
+            <option value="">Todos</option>
+            <option value="vigor_alto">💪 Vigor alto</option>
+            <option value="vigor_bajo">📉 Vigor bajo</option>
+            <option value="clorosis">🍋 Clorosis</option>
+            <option value="acaros">🔬 Ácaros</option>
+            <option value="plaga">⚠️ Plaga</option>
+            <option value="cepa_muerta">💀 Cepa muerta</option>
+            <option value="riego_roto">💧 Riego roto</option>
+            <option value="alambre">🔧 Alambre/poste</option>
+            <option value="racimos">🍇 Racimos</option>
+            <option value="muestra">🧪 Muestra</option>
+            <option value="poda_verde">✂️ Poda verde</option>
+            <option value="nota_libre">📝 Nota libre</option>
+          </select>
+        </div>
+        <div><label style="font-size:9px;font-family:var(--mono);color:var(--tl);text-transform:uppercase;display:block;margin-bottom:3px">Usuario</label>
+          <select id="f-user" style="font-size:11px">
+            <option value="">Todos</option>
+            <option>Rocío</option><option>Esperanza</option><option>Trabajador</option>
+          </select>
+        </div>
+      </div>
+      <div class="sl" style="margin-bottom:6px">Parcela</div>
+      <div class="fbar" id="fbar"></div>
+      <button class="savebtn outline" style="font-size:11px;padding:8px" onclick="renderHist()">🔍 Aplicar</button>
+    </div>
+    <div id="hist-content"></div>
+    <button class="savebtn outline" style="margin-top:8px" onclick="exportar()">⬇ Exportar JSON</button>
+  </div>
+
+  <!-- CLIMA -->
+  <div id="p-clima" class="panel">
+    <div class="sl">Condiciones actuales · Ventas de Alcolea</div>
+    <div class="cbig">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div><div class="ctemp" id="c-temp">--°</div><div class="cdesc" id="c-desc">Cargando...</div></div>
+        <div style="text-align:right;font-family:var(--mono);font-size:11px;color:rgba(255,255,255,.8)">
+          <div id="c-hum">-- % hum</div>
+          <div id="c-viento" style="margin-top:4px;opacity:.7">-- km/h</div>
+        </div>
+      </div>
+      <div class="crows">
+        <div class="ci"><div class="v" id="c-tmax">--</div><div class="l">T.MAX</div></div>
+        <div class="ci"><div class="v" id="c-tmin">--</div><div class="l">T.MIN</div></div>
+        <div class="ci"><div class="v" id="c-lluvia">--</div><div class="l">mm HOY</div></div>
+      </div>
+    </div>
+    <!-- ALERTAS -->
+    <div id="alertas-clima" style="margin-bottom:10px"></div>
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div class="sl" style="margin-bottom:0">Precipitaciones</div>
+        <select id="hist-dias" onchange="loadClima()" style="font-size:10px;font-family:var(--mono);padding:3px 6px;border-radius:6px;border:1.5px solid var(--cd);background:#fff">
+          <option value="14">14 días</option>
+          <option value="30">30 días</option>
+          <option value="60">2 meses</option>
+          <option value="90">3 meses</option>
+        </select>
+      </div>
+      <div id="lluvia-chart" style="display:flex;align-items:flex-end;height:70px;gap:2px"></div>
+      <div id="lluvia-lbl" style="margin-top:4px;font-size:9px;color:var(--tl);font-family:var(--mono)"></div>
+      <div id="lluvia-totales" style="margin-top:6px;font-size:10px;font-family:var(--mono);color:var(--tl)"></div>
+    </div>
+    <div class="card">
+      <div class="sl" style="margin-bottom:10px">Temperatura máx/mín</div>
+      <div id="temp-chart" style="display:flex;align-items:flex-end;height:70px;gap:2px"></div>
+      <div id="temp-lbl" style="margin-top:4px;font-size:9px;color:var(--tl);font-family:var(--mono)"></div>
+    </div>
+    <div class="card">
+      <div class="sl" style="margin-bottom:8px">Detalle últimos 7 días</div>
+      <div id="clima-tabla"></div>
+    </div>
+    <div class="card">
+      <div class="sl" style="margin-bottom:8px">Pluviómetro viña</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+        <div><label style="font-size:9px;font-family:var(--mono);color:var(--tl);text-transform:uppercase;display:block;margin-bottom:3px">Fecha</label><input type="date" id="pluv-fecha"></div>
+        <div><label style="font-size:9px;font-family:var(--mono);color:var(--tl);text-transform:uppercase;display:block;margin-bottom:3px">mm</label><input type="number" id="pluv-mm" step="0.1" placeholder="0.0"></div>
+      </div>
+      <button class="savebtn" onclick="savePluvio()" style="padding:10px">💧 Guardar lectura</button>
+    </div>
+    <div id="pluv-hist"></div>
+  </div>
+
+  <!-- FICHAS -->
+  <div id="p-fichas" class="panel">
+    <div id="fichas-wrap"></div>
+  </div>
+
+</div>
+
+<!-- MODAL EDITAR -->
+<div id="modal" onclick="if(event.target===this)closeModal()">
+  <div id="mbox">
+    <div class="mtitle">✏️ Editar observación</div>
+    <div class="sl" style="margin-bottom:5px">Parcela</div>
+    <select id="e-parc" style="margin-bottom:10px"></select>
+    <div class="sl" style="margin-bottom:5px">Tipo</div>
+    <select id="e-tipo" style="margin-bottom:10px"></select>
+    <div class="sl" style="margin-bottom:5px">Nota</div>
+    <textarea id="e-nota" rows="4"></textarea>
+    <div class="mbtns">
+      <button class="savebtn ok" onclick="doEdit()" style="flex:2">💾 Guardar</button>
+      <button class="savebtn" onclick="doDelete()" style="flex:1;background:#E74C3C">🗑</button>
+      <button class="savebtn outline" onclick="closeModal()" style="flex:1">✕</button>
+    </div>
+  </div>
+</div>
+
+<div id="sync"></div>
+
+<script>
+const SURL='https://owqvnouzsreezefmsmyq.supabase.co';
+const SKEY='sb_publishable_5LzT7kq4R-HjVGqeCd0PNQ_l4wtpfxn';
+const db=supabase.createClient(SURL,SKEY);
+const LAT=39.2793,LNG=-2.4583;
+
+const PARCELAS=[
+  {id:'tj',nombre:'Tempranillo Joven', chip:'TemprJov', color:'#E74C3C'},
+  {id:'tv',nombre:'Tempranillo Viejo', chip:'TemprViej',color:'#C0392B'},
+  {id:'ms',nombre:'Moscatel G.Menudo',chip:'Moscatel', color:'#F39C12'},
+  {id:'cs',nombre:'Cabernet Sauv.',   chip:'Cab.Sauv', color:'#8B2635'},
+  {id:'sv',nombre:'Sauvignon Blanc',  chip:'Sauv.Bl',  color:'#7CB9A0'},
+  {id:'mr',nombre:'Merlot',           chip:'Merlot',   color:'#9B59B6'},
+  {id:'ai1',nombre:'Airén A',         chip:'Airén A',  color:'#BDC3C7'},
+  {id:'ai2',nombre:'Airén B',         chip:'Airén B',  color:'#95A5A6'},
+  {id:'az',nombre:'Azafrán',          chip:'Azafrán',  color:'#E6B800'},
+  {id:'ol',nombre:'Olivos',           chip:'Olivos',   color:'#27AE60'},
+];
+const PMAP=Object.fromEntries(PARCELAS.map(p=>[p.id,p]));
+
+const TIPOS=[
+  {id:'vigor_alto', label:'Vigor alto',     icon:'💪',color:'#27AE60'},
+  {id:'vigor_bajo', label:'Vigor bajo',     icon:'📉',color:'#E74C3C'},
+  {id:'clorosis',   label:'Clorosis',       icon:'🍋',color:'#F39C12'},
+  {id:'acaros',     label:'Ácaros',         icon:'🔬',color:'#E67E22'},
+  {id:'plaga',      label:'Plaga/Enf.',     icon:'⚠️',color:'#C0392B'},
+  {id:'cepa_muerta',label:'Cepa muerta',    icon:'💀',color:'#7F8C8D'},
+  {id:'riego_roto', label:'Riego roto',     icon:'💧',color:'#3498DB'},
+  {id:'alambre',    label:'Alambre/poste',  icon:'🔧',color:'#95A5A6'},
+  {id:'racimos',    label:'Conteo racimos', icon:'🍇',color:'#8E44AD'},
+  {id:'muestra',    label:'Toma muestra',   icon:'🧪',color:'#1ABC9C'},
+  {id:'poda_verde', label:'Poda verde',     icon:'✂️',color:'#16A085'},
+  {id:'cubierta',   label:'Cubierta vegetal',icon:'🌾',color:'#8BC34A'},
+  {id:'nota_libre', label:'Nota libre',     icon:'📝',color:'#34495E'},
+];
+const TMAP=Object.fromEntries(TIPOS.map(t=>[t.id,t]));
+
+const TAREAS_L=[
+  {id:'poda_verde',  label:'Poda en verde',           icon:'✂️'},
+  {id:'poda_seco',   label:'Poda en seco',            icon:'🪚'},
+  {id:'tratamiento', label:'Tratamiento fitosanitario',icon:'💊'},
+  {id:'azufrado',    label:'Azufrado',                icon:'🟡'},
+  {id:'cobrizado',   label:'Cobrizado',               icon:'🔵'},
+  {id:'abonado',     label:'Abonado/fertilización',   icon:'🌱'},
+  {id:'cubierta',    label:'Gestión cubierta vegetal', icon:'🌿'},
+  {id:'riego',       label:'Riego',                   icon:'💧'},
+  {id:'analitica',   label:'Analítica suelo/hoja',    icon:'🧪'},
+  {id:'vendimia',    label:'Vendimia',                icon:'🍇'},
+];
+
+const FENOLOGIA=[
+  {id:'dormancia',label:'Dormancia', icon:'😴'},
+  {id:'brotacion',label:'Brotación', icon:'🌱'},
+  {id:'hojas',    label:'P.hojas',   icon:'🍃'},
+  {id:'floracion',label:'Floración', icon:'🌸'},
+  {id:'cuajado',  label:'Cuajado',   icon:'🔵'},
+  {id:'envero',   label:'Envero',    icon:'🟣'},
+  {id:'madurez',  label:'Madurez',   icon:'🍇'},
+  {id:'vendimia', label:'Vendimia',  icon:'🧺'},
+];
+
+const LEGACY=[
+  {legacy_id:1777136578542,timestamp:'2026-04-25T17:02:58.542Z',parcela_id:'ms',tipo:'racimos',nota:'22\n15\n19\n17\n14\nMoscatel?',lat:39.2792236,lng:-2.4581962,acc:3,usuario:'Rocío',usuario_color:'#8B2635'},
+  {legacy_id:1777136299966,timestamp:'2026-04-25T16:58:19.966Z',parcela_id:'ms',tipo:'cepa_muerta',nota:'5 faltas cerca de los pinos',lat:39.2792047,lng:-2.4582824,acc:3,usuario:'Rocío',usuario_color:'#8B2635'},
+  {legacy_id:1777136231794,timestamp:'2026-04-25T16:57:11.794Z',parcela_id:'ms',tipo:'racimos',nota:'8 rac línea pinos\n13\n21\n17\n24',lat:39.279077,lng:-2.4583319,acc:3,usuario:'Rocío',usuario_color:'#8B2635'},
+  {legacy_id:1777135485695,timestamp:'2026-04-25T16:44:45.695Z',parcela_id:'ms',tipo:'racimos',nota:'7 rac 3ª\n12 4ª\n15 5ª\n20 6ª\n17 7ª\n22 8ª\n21 9ª',lat:39.2791188,lng:-2.458429,acc:4,usuario:'Rocío',usuario_color:'#8B2635'},
+  {legacy_id:1777135118585,timestamp:'2026-04-25T16:38:38.542Z',parcela_id:null,tipo:'nota_libre',nota:'Ácaros?',lat:39.27908,lng:-2.4585039,acc:4,usuario:'Rocío',usuario_color:'#8B2635'},
+  {legacy_id:1777135081248,timestamp:'2026-04-25T16:38:01.248Z',parcela_id:'ms',tipo:'racimos',nota:'20 racimos 1ª cepa mosc\n30 rac 2ª',lat:39.2790922,lng:-2.4585014,acc:4,usuario:'Rocío',usuario_color:'#8B2635'},
+  {legacy_id:1777131970869,timestamp:'2026-04-25T15:46:10.869Z',parcela_id:'tv',tipo:'clorosis',nota:'clorosis zona carretera',lat:39.2788609,lng:-2.4585814,acc:3,usuario:'Rocío',usuario_color:'#8B2635'},
+];
+
+// STATE
+let user=null,userColor=null,parcela=null,tipoObs=null,selTarea=null,selFeno=null;
+let gps=null,grabando=false,recognition=null,fotoDataUrl=null;
+let obs=[],tareas=[],fichas={},fenoLog=[],pluvioLog=[],notasAnuales=[],notasGenerales=[],campanias={};
+let filterParc='all',mapInst=null,mapMarks=[];
+let editId=null,expRec=null,curTab='obs';
+let campaniaActual=new Date().getFullYear();
+let editNGId=null,editNAId=null;
+
+obs=[...LEGACY];
+
+// ── LOCAL STORAGE ──
+function lsave(t,r){try{const k='tf_'+t;const a=JSON.parse(localStorage.getItem(k)||'[]');const lid=r.local_id||r.legacy_id;if(lid&&a.some(x=>(x.local_id||x.legacy_id)===lid))return;a.unshift(r);localStorage.setItem(k,JSON.stringify(a.slice(0,1000)));}catch(e){}}
+function lload(t){try{return JSON.parse(localStorage.getItem('tf_'+t)||'[]');}catch(e){return[];}}
+function ldel(t,fn){try{const a=JSON.parse(localStorage.getItem('tf_'+t)||'[]');localStorage.setItem('tf_'+t,JSON.stringify(a.filter(r=>!fn(r))));}catch(e){}}
+function lupd(t,fn,upd){try{const a=JSON.parse(localStorage.getItem('tf_'+t)||'[]');const i=a.findIndex(fn);if(i>=0){a[i]=upd(a[i]);localStorage.setItem('tf_'+t,JSON.stringify(a));}}catch(e){}}
+function qpend(t,r){try{const q=JSON.parse(localStorage.getItem('tf_pend')||'[]');q.push({t,r});localStorage.setItem('tf_pend',JSON.stringify(q));}catch(e){}}
+async function flushPend(){try{const q=JSON.parse(localStorage.getItem('tf_pend')||'[]');if(!q.length)return;const rem=[];for(const x of q){try{const{error}=await db.from(x.t).insert(x.r);if(error)rem.push(x);}catch(e){rem.push(x);}}localStorage.setItem('tf_pend',JSON.stringify(rem));if(rem.length<q.length)syncOK('✓ '+( q.length-rem.length)+' obs subidas');}catch(e){}}
+
+// ── SUPABASE ──
+async function dbsave(t,r){
+  const rr={...r,local_id:r.local_id||Date.now()};
+  lsave(t,rr);syncOK('💾 Guardado');
+  try{const{error}=await db.from(t).insert(r);if(error)throw error;syncOK('☁️ Sincronizado');setTimeout(hideSync,1500);}
+  catch(e){qpend(t,r);syncWarn('⚠️ Sin red — guardado localmente');setTimeout(hideSync,3000);}
+}
+async function dbupsert(t,r,c){
+  lsave(t,r);
+  try{const{error}=await db.from(t).upsert(r,{onConflict:c});if(error)throw error;syncOK('✓ Guardado');setTimeout(hideSync,1500);}
+  catch(e){syncWarn('⚠️ Sin red');setTimeout(hideSync,2500);}
+}
+async function dbdel(t,id){try{await db.from(t).delete().eq('id',id);syncOK('✓ Borrado');setTimeout(hideSync,1200);}catch(e){syncWarn('⚠️ Error');setTimeout(hideSync,2000);}}
+
+function syncOK(m){const b=document.getElementById('sync');b.textContent=m;b.style.background='#27AE60';b.classList.add('on');}
+function syncWarn(m){const b=document.getElementById('sync');b.textContent=m;b.style.background='#C0392B';b.classList.add('on');}
+function hideSync(){document.getElementById('sync').classList.remove('on');}
+
+async function loadSupa(){
+  // Local first
+  const lo=lload('observaciones');
+  const lt=lload('tareas');
+  const lf=lload('fichas');
+  const lp=lload('pluvio');
+  const legIds=new Set(LEGACY.map(l=>l.legacy_id));
+  const localOnly=lo.filter(o=>!legIds.has(o.legacy_id));
+  obs=[...localOnly,...LEGACY].sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp));
+  if(lt.length)tareas=lt;
+  lf.forEach(f=>{if(f.parcela_id)fichas[f.parcela_id]=f;});
+  if(lp.length)pluvioLog=lp;
+  renderHist();renderFichas();renderPluvHist();
+  // Then Supabase
+  try{
+    const{data:so}=await db.from('observaciones').select('*').order('timestamp',{ascending:false}).limit(500);
+    const{data:st}=await db.from('tareas').select('*').order('timestamp',{ascending:false}).limit(200);
+    const{data:sf}=await db.from('fichas').select('*');
+    const{data:fen}=await db.from('fenologia').select('*').order('timestamp',{ascending:false}).limit(200);
+    const{data:plu}=await db.from('pluvio').select('*').order('fecha',{ascending:false}).limit(100);
+    const{data:na}=await db.from('notas_anuales').select('*').order('timestamp',{ascending:false});
+    const{data:ng}=await db.from('notas_generales').select('*').order('timestamp',{ascending:false});
+    const{data:ca}=await db.from('campanias').select('*');
+    if(so&&so.length>0){
+      const sids=new Set(so.map(o=>o.local_id||o.legacy_id).filter(Boolean));
+      const onlyLoc=obs.filter(o=>{const lid=o.local_id||o.legacy_id;return lid&&!sids.has(lid)&&!o.id;});
+      obs=[...so,...onlyLoc].sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp));
+      onlyLoc.forEach(l=>{if(!l.legacy_id)dbsave('observaciones',l);});
+    }
+    if(st&&st.length)tareas=st;
+    if(sf)sf.forEach(f=>fichas[f.parcela_id]=f);
+    if(fen&&fen.length)fenoLog=fen;
+    if(plu&&plu.length)pluvioLog=plu;
+    if(na)notasAnuales=na;
+    if(ng)notasGenerales=ng;
+    if(ca)ca.forEach(r=>{if(!campanias[r.parcela_id])campanias[r.parcela_id]={};campanias[r.parcela_id][r.year]=r;});
+    renderHist();renderFichas();renderPluvHist();
+    if(mapInst)renderMapMarks();
+    await flushPend();
+  }catch(e){syncWarn('⚠️ Sin conexión — modo local');setTimeout(hideSync,3000);}
+}
+
+// ── CONTRASEÑA ──
+const PASSWORDS={'Rocío':'viña2026','Esperanza':'viña2026','Trabajador':'campo2026','Invitado':'campo2026'};
+let pendingUser=null,pendingColor=null;
+function tryLogin(n,c){
+  pendingUser=n;pendingColor=c;
+  document.getElementById('pwd-box').style.display='block';
+  document.querySelector('.ugrid').style.display='none';
+  document.getElementById('pwd-input').value='';
+  document.getElementById('pwd-error').style.display='none';
+  setTimeout(()=>document.getElementById('pwd-input').focus(),100);
+}
+function confirmPwd(){
+  const pwd=document.getElementById('pwd-input').value;
+  if(pwd===PASSWORDS[pendingUser]){login(pendingUser,pendingColor);}
+  else{document.getElementById('pwd-error').style.display='block';document.getElementById('pwd-input').value='';}
+}
+function cancelPwd(){
+  document.getElementById('pwd-box').style.display='none';
+  document.querySelector('.ugrid').style.display='grid';
+  pendingUser=null;pendingColor=null;
+}
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&pendingUser)confirmPwd();});
+
+// ── LOGIN ──
+function login(n,c){
+  user=n;userColor=c;
+  localStorage.setItem('tf_u',n);localStorage.setItem('tf_c',c);
+  document.getElementById('login').style.display='none';
+  document.getElementById('hdr').style.display='block';
+  document.getElementById('pbar').style.display='block';
+  document.getElementById('tabs').style.display='flex';
+  document.getElementById('content').style.display='block';
+  document.getElementById('udot').style.background=c;
+  document.getElementById('uname').textContent=n;
+  startGPS();
+  renderPbar();renderTipos();renderTareas();renderFenos();renderHist();renderFichas();
+  const today=new Date().toISOString().split('T')[0];
+  document.getElementById('pluv-fecha').value=today;
+  loadSupa();loadClima();
+}
+function logout(){if(confirm('¿Cambiar usuario?')){user=null;document.getElementById('login').style.display='flex';document.getElementById('hdr').style.display='none';document.getElementById('pbar').style.display='none';document.getElementById('tabs').style.display='none';document.getElementById('content').style.display='none';}}
+window.addEventListener('load',()=>{const u=localStorage.getItem('tf_u'),c=localStorage.getItem('tf_c');if(u&&c)login(u,c);});
+
+// ── GPS ──
+function startGPS(){
+  if(!navigator.geolocation)return;
+  navigator.geolocation.watchPosition(
+    p=>{gps={lat:p.coords.latitude,lng:p.coords.longitude,acc:Math.round(p.coords.accuracy)};document.getElementById('gdot').classList.add('on');document.getElementById('gtxt').textContent='±'+gps.acc+'m';document.getElementById('gps-lbl').textContent='GPS ±'+gps.acc+'m';},
+    ()=>{document.getElementById('gtxt').textContent='sin GPS';},
+    {enableHighAccuracy:true,maximumAge:5000}
+  );
+}
+
+// ── MIC ──
+function toggleMic(t){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){alert('Usa Chrome para voz');return;}
+  if(grabando){recognition?.stop();grabando=false;document.getElementById('mic-'+t).classList.remove('rec');document.getElementById('mic-'+t).textContent='🎙';document.getElementById('mst-'+t).classList.remove('on');return;}
+  recognition=new SR();recognition.lang='es-ES';recognition.continuous=true;recognition.interimResults=false;
+  recognition.onstart=()=>{grabando=true;document.getElementById('mic-'+t).classList.add('rec');document.getElementById('mic-'+t).textContent='⏹';document.getElementById('mst-'+t).classList.add('on');};
+  recognition.onresult=e=>{const tx=Array.from(e.results).map(r=>r[0].transcript).join(' ');const ta=document.getElementById(t==='obs'?'nota-obs':'nota-tarea');ta.value=ta.value?ta.value+' '+tx:tx;};
+  recognition.onend=()=>{grabando=false;document.getElementById('mic-'+t).classList.remove('rec');document.getElementById('mic-'+t).textContent='🎙';document.getElementById('mst-'+t).classList.remove('on');};
+  recognition.onerror=()=>{grabando=false;document.getElementById('mic-'+t).classList.remove('rec');document.getElementById('mic-'+t).textContent='🎙';};
+  recognition.start();
+}
+
+// ── FOTO ──
+function prevFoto(inp){if(!inp.files||!inp.files[0])return;const r=new FileReader();r.onload=e=>{fotoDataUrl=e.target.result;document.getElementById('foto-img').src=fotoDataUrl;document.getElementById('foto-prev').style.display='inline-block';};r.readAsDataURL(inp.files[0]);}
+function clearFoto(){fotoDataUrl=null;document.getElementById('foto-cam').value='';document.getElementById('foto-gal').value='';document.getElementById('foto-prev').style.display='none';}
+
+// ── RENDER PARCELA BAR ──
+function renderPbar(){
+  document.getElementById('pbar').innerHTML=
+    '<span class="pchip '+(parcela===null?'act':'')+'" style="'+(parcela===null?'background:rgba(255,255,255,.22);color:#fff':'')+'" onclick="selP(null)">Todas</span>'+
+    PARCELAS.map(p=>'<span class="pchip '+(parcela===p.id?'act':'')+'" style="'+(parcela===p.id?'background:'+p.color+';border-color:'+p.color:'')+'" onclick="selP(\''+p.id+'\')">'+p.chip+'</span>').join('');
+}
+function selP(id){parcela=id;renderPbar();renderTipos();}
+
+// ── RENDER TIPOS ──
+function renderTipos(){
+  document.getElementById('tipos-grid').innerHTML=TIPOS.map(t=>{
+    const a=tipoObs===t.id;
+    return '<button class="tbtn'+(a?' act':'')+'" style="border-color:'+(a?t.color:'var(--cd)')+';background:'+(a?t.color+'18':'#fff')+';color:'+(a?t.color:'#555')+'" onclick="selTipo(\''+t.id+'\')">'+t.icon+' '+t.label+'</button>';
+  }).join('');
+  const btn=document.getElementById('btn-obs');
+  btn.disabled=!tipoObs;
+  btn.textContent=tipoObs?'📍 Guardar'+(gps&&document.getElementById('gps-on').checked?' (GPS ±'+gps.acc+'m)':''):'📍 Guardar observación';
+}
+function selTipo(id){tipoObs=tipoObs===id?null:id;renderTipos();}
+document.addEventListener('change',e=>{if(e.target.id==='gps-on')renderTipos();});
+
+// ── RENDER TAREAS ──
+function renderTareas(){
+  document.getElementById('tareas-grid').innerHTML=TAREAS_L.map(t=>'<button class="tlbtn'+(selTarea===t.id?' act':'')+'" onclick="selT(\''+t.id+'\')">'+t.icon+' '+t.label+'</button>').join('');
+}
+function selT(id){selTarea=selTarea===id?null:id;renderTareas();document.getElementById('tarea-extra').style.display=selTarea?'block':'none';if(selTarea){const t=TAREAS_L.find(x=>x.id===selTarea);document.getElementById('btn-tarea').textContent='✅ Registrar: '+t.label;}}
+
+// ── RENDER FENOS ──
+function renderFenos(){
+  document.getElementById('feno-grid').innerHTML=FENOLOGIA.map(f=>'<button class="fbtn'+(selFeno===f.id?' act':'')+'" onclick="selFe(\''+f.id+'\')">'+f.icon+'<br><span style="font-size:10px">'+f.label+'</span></button>').join('');
+}
+function selFe(id){selFeno=selFeno===id?null:id;renderFenos();document.getElementById('btn-feno').disabled=!selFeno||!parcela;}
+
+// ── SAVE OBS ──
+async function saveObs(){
+  if(!tipoObs){document.getElementById('w-obs').style.display='block';return;}
+  document.getElementById('w-obs').style.display='none';
+  const useGps=document.getElementById('gps-on').checked;
+  const r={timestamp:new Date().toISOString(),parcela_id:parcela,tipo:tipoObs,nota:document.getElementById('nota-obs').value.trim(),lat:useGps&&gps?gps.lat:null,lng:useGps&&gps?gps.lng:null,acc:useGps&&gps?gps.acc:null,usuario:user,usuario_color:userColor,foto_url:fotoDataUrl||null};
+  obs.unshift(r);tipoObs=null;document.getElementById('nota-obs').value='';clearFoto();renderTipos();
+  const btn=document.getElementById('btn-obs');btn.classList.add('ok');btn.textContent='✓ Guardado';
+  setTimeout(()=>{btn.classList.remove('ok');btn.disabled=true;btn.textContent='📍 Guardar observación';},1500);
+  renderHist();if(mapInst)renderMapMarks();
+  await dbsave('observaciones',r);
+}
+
+// ── SAVE TAREA ──
+async function saveTarea(){
+  if(!selTarea||!parcela){document.getElementById('w-tarea').style.display='block';return;}
+  document.getElementById('w-tarea').style.display='none';
+  const r={timestamp:new Date().toISOString(),parcela_id:parcela,tarea:selTarea,detalle:document.getElementById('nota-tarea').value.trim(),lat:gps?.lat||null,lng:gps?.lng||null,acc:gps?.acc||null,usuario:user,usuario_color:userColor};
+  tareas.unshift(r);selTarea=null;document.getElementById('nota-tarea').value='';
+  document.getElementById('tarea-extra').style.display='none';renderTareas();
+  const btn=document.getElementById('btn-tarea');btn.classList.add('ok');btn.textContent='✓ Registrado';
+  setTimeout(()=>btn.classList.remove('ok'),1500);
+  renderHist();await dbsave('tareas',r);
+}
+
+// ── SAVE FENO ──
+async function saveFeno(){
+  if(!selFeno||!parcela){document.getElementById('w-feno').style.display='block';return;}
+  document.getElementById('w-feno').style.display='none';
+  const r={timestamp:new Date().toISOString(),parcela_id:parcela,estado:selFeno,usuario:user,usuario_color:userColor};
+  fenoLog.unshift(r);selFeno=null;renderFenos();document.getElementById('btn-feno').disabled=true;
+  syncOK('✓ Fenología guardada');setTimeout(hideSync,1500);
+  await dbsave('fenologia',r);
+}
+
+// ── SAVE PLUVIO ──
+async function savePluvio(){
+  const fecha=document.getElementById('pluv-fecha').value;
+  const mm=parseFloat(document.getElementById('pluv-mm').value);
+  if(!fecha||isNaN(mm))return;
+  const r={fecha,mm,usuario:user};
+  pluvioLog.unshift(r);renderPluvHist();
+  document.getElementById('pluv-mm').value='';
+  await dbsave('pluvio',r);
+}
+function renderPluvHist(){
+  if(!pluvioLog.length){document.getElementById('pluv-hist').innerHTML='';return;}
+  let h='<div class="card"><div class="sl" style="margin-bottom:8px">Lecturas pluviómetro</div>';
+  h+=pluvioLog.slice(0,20).map(p=>'<div class="pluv-row"><span>'+p.fecha+'</span><span style="color:#3498DB;font-weight:600">'+p.mm+' mm</span><span style="color:var(--tl);font-size:9px">'+(p.usuario||'')+'</span></div>').join('');
+  h+='</div>';
+  document.getElementById('pluv-hist').innerHTML=h;
+}
+
+// ── HISTORIAL ──
+function renderHist(){
+  const today=new Date().toDateString();
+  document.getElementById('s-hoy').textContent=obs.filter(o=>new Date(o.timestamp).toDateString()===today).length;
+  document.getElementById('s-tar').textContent=tareas.length;
+  document.getElementById('s-tot').textContent=obs.length;
+  // filter bar
+  document.getElementById('fbar').innerHTML=
+    '<button class="fchip'+(filterParc==='all'?' act':'')+'" onclick="setFP(\'all\')">Todas</button>'+
+    PARCELAS.map(p=>'<button class="fchip'+(filterParc===p.id?' act':'')+'" style="'+(filterParc===p.id?'background:'+p.color:'')+'" onclick="setFP(\''+p.id+'\')">'+p.chip+'</button>').join('');
+  // filters
+  const desde=document.getElementById('f-desde')?.value;
+  const hasta=document.getElementById('f-hasta')?.value;
+  const ftipo=document.getElementById('f-tipo')?.value;
+  const fusr=document.getElementById('f-user')?.value;
+  let filtered=[...obs];
+  if(filterParc!=='all')filtered=filtered.filter(o=>o.parcela_id===filterParc);
+  if(desde)filtered=filtered.filter(o=>o.timestamp>=desde);
+  if(hasta)filtered=filtered.filter(o=>o.timestamp<=hasta+'T23:59:59');
+  if(ftipo)filtered=filtered.filter(o=>o.tipo===ftipo);
+  if(fusr)filtered=filtered.filter(o=>o.usuario===fusr);
+  let html='';
+  // feno log
+  if(fenoLog.length){
+    html+='<div class="sl" style="margin-bottom:8px">Estados fenológicos</div><div class="card">';
+    html+=fenoLog.slice(0,8).map(f=>{const p=PMAP[f.parcela_id];const fe=FENOLOGIA.find(x=>x.id===f.estado);return '<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--cd);font-size:11px"><span>'+(fe?.icon||'')+'  '+(fe?.label||f.estado)+'</span><span style="font-family:var(--mono);font-size:9px;color:'+(p?.color||'#888')+'">'+(p?.chip||'')+'  '+fmtDate(f.timestamp)+'</span></div>';}).join('');
+    html+='</div>';
+  }
+  // tareas
+  if(tareas.length){
+    html+='<div class="sl" style="margin-bottom:8px;margin-top:8px">Tareas ('+tareas.length+')</div>';
+    html+=tareas.slice(0,15).map(t=>{const p=PMAP[t.parcela_id];const ta=TAREAS_L.find(x=>x.id===t.tarea);return '<div class="rec" style="border-left-color:'+(p?.color||'#ccc')+'"><div class="rec-top"><div class="rec-tipo">'+(ta?.icon||'✅')+' '+(ta?.label||t.tarea)+'</div><div class="rec-meta"><div class="rec-time">'+fmtDate(t.timestamp)+' '+fmtTime(t.timestamp)+'</div><div class="rec-user" style="color:'+(t.usuario_color||'#999')+'">'+(t.usuario||'')+'</div></div></div><div class="rec-parc" style="color:'+(p?.color||'#888')+'">'+(p?.nombre||'')+'</div>'+(t.detalle?'<div class="rec-nota">'+t.detalle+'</div>':'')+'</div>';}).join('');
+  }
+  // observaciones
+  html+='<div class="sl" style="margin-bottom:8px;margin-top:8px">Observaciones ('+filtered.length+')</div>';
+  if(!filtered.length){html+='<div style="text-align:center;color:#ccc;font-family:var(--mono);font-size:12px;padding:28px">Sin resultados 🌿</div>';}
+  else{
+    html+=filtered.map(o=>{
+      const p=PMAP[o.parcela_id];const ti=TMAP[o.tipo]||{icon:'📍',label:o.tipo,color:'#666'};
+      const uid=o.id||o.legacy_id;const isExp=expRec===uid;
+      return '<div class="rec" style="border-left-color:'+ti.color+'" onclick="toggleRec('+uid+')">'+
+        '<div class="rec-top"><div class="rec-tipo" style="color:'+ti.color+'">'+ti.icon+' '+ti.label+'</div>'+
+        '<div class="rec-meta"><div class="rec-time">'+fmtDate(o.timestamp)+' '+fmtTime(o.timestamp)+'</div>'+
+        '<div class="rec-user" style="color:'+(o.usuario_color||'#999')+'">'+(o.usuario||'')+'</div></div></div>'+
+        (p?'<div class="rec-parc" style="color:'+p.color+'">'+p.nombre+'</div>':'')+
+        (isExp?
+          (o.nota?'<div class="rec-nota" style="white-space:pre-line;font-size:12px;color:#333">'+o.nota+'</div>':'')+
+          (o.foto_url?'<img src="'+o.foto_url+'" style="width:100%;border-radius:8px;margin-top:8px;max-height:220px;object-fit:cover">':'')+
+          (o.lat?'<div class="rec-gps">📍 '+o.lat.toFixed(5)+', '+o.lng.toFixed(5)+' ±'+o.acc+'m</div>':'')+
+          '<div class="rec-acts">'+
+            '<button class="ract" style="background:#F0F8F0;color:var(--v)" onclick="event.stopPropagation();openEdit('+uid+')">✏️ Editar</button>'+
+            '<button class="ract" style="background:#FEF0F0;color:#C0392B" onclick="event.stopPropagation();editId='+uid+';doDelete()">🗑 Borrar</button>'+
+          '</div>'
+        :(o.nota?'<div class="rec-nota" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+o.nota+'</div>':''))+
+      '</div>';
+    }).join('');
+  }
+  document.getElementById('hist-content').innerHTML=html;
+}
+function toggleRec(id){expRec=expRec===id?null:id;renderHist();}
+function setFP(id){filterParc=id;renderHist();}
+
+// ── EDIT / DELETE ──
+function openEdit(uid){
+  const o=obs.find(x=>(x.id||x.legacy_id)===uid);if(!o)return;
+  editId=uid;
+  document.getElementById('e-parc').innerHTML='<option value="">Sin parcela</option>'+PARCELAS.map(p=>'<option value="'+p.id+'"'+(o.parcela_id===p.id?' selected':'')+'>'+p.nombre+'</option>').join('');
+  document.getElementById('e-tipo').innerHTML=TIPOS.map(t=>'<option value="'+t.id+'"'+(o.tipo===t.id?' selected':'')+'>'+t.icon+' '+t.label+'</option>').join('');
+  document.getElementById('e-nota').value=o.nota||'';
+  document.getElementById('modal').classList.add('on');
+}
+function closeModal(){document.getElementById('modal').classList.remove('on');}
+async function doEdit(){
+  const idx=obs.findIndex(x=>(x.id||x.legacy_id)===editId);if(idx<0)return;
+  obs[idx].parcela_id=document.getElementById('e-parc').value||null;
+  obs[idx].tipo=document.getElementById('e-tipo').value;
+  obs[idx].nota=document.getElementById('e-nota').value;
+  if(obs[idx].id)await db.from('observaciones').update({parcela_id:obs[idx].parcela_id,tipo:obs[idx].tipo,nota:obs[idx].nota}).eq('id',obs[idx].id);
+  closeModal();renderHist();if(mapInst)renderMapMarks();syncOK('✓ Editado');setTimeout(hideSync,1200);
+}
+async function doDelete(){
+  const idx=obs.findIndex(x=>(x.id||x.legacy_id)===editId);if(idx<0)return;
+  if(!confirm('¿Borrar?'))return;
+  if(obs[idx].id)await dbdel('observaciones',obs[idx].id);
+  obs.splice(idx,1);closeModal();renderHist();if(mapInst)renderMapMarks();
+}
+
+// ── MAPA ──
+const POLYS={
+  cs:{color:'#8B2635',name:'Cabernet Sauv.',    poly:[[39.27862,-2.457024],[39.27867,-2.454880],[39.28052,-2.454948],[39.28047,-2.457092],[39.27862,-2.457024]]},
+  sv:{color:'#7CB9A0',name:'Sauv.Bl/Airén/Az',  poly:[[39.27696,-2.458914],[39.27717,-2.455563],[39.27870,-2.455723],[39.27848,-2.459074],[39.27696,-2.458914]]},
+  tv:{color:'#C0392B',name:'Tempranillo Viejo',  poly:[[39.27847,-2.458231],[39.27848,-2.457013],[39.28042,-2.457042],[39.28041,-2.458259],[39.27847,-2.458231]]},
+  mr:{color:'#9B59B6',name:'Merlot',             poly:[[39.27839,-2.458868],[39.27838,-2.458114],[39.28037,-2.458099],[39.28037,-2.458852],[39.27839,-2.458868]]},
+  ms:{color:'#F39C12',name:'Moscatel',           poly:[[39.27834,-2.459317],[39.27833,-2.458679],[39.28036,-2.458663],[39.28036,-2.459301],[39.27834,-2.459317]]},
+  tj:{color:'#E74C3C',name:'Tempr.Joven/Olivos', poly:[[39.27675,-2.464453],[39.27695,-2.458894],[39.28028,-2.459093],[39.28008,-2.464652],[39.27675,-2.464453]]},
+};
+const PLABELS={
+  cs:[39.279565,-2.455990],tv:[39.279438,-2.457200],mr:[39.279379,-2.458484],
+  ms:[39.279345,-2.459200],sv:[39.277569,-2.456828],az:[39.277219,-2.459150],
+  ai1:[39.277215,-2.458338],tj:[39.279204,-2.459714],ol:[39.279216,-2.462265],
+};
+function initMap(){
+  if(mapInst){mapInst.invalidateSize();return;}
+  document.getElementById('map').style.height=(window.innerHeight-120)+'px';
+  mapInst=L.map('map').setView([LAT,LNG],16);
+  const sat=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{attribution:'ESRI',maxZoom:20});
+  const osm=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'OSM',maxZoom:20});
+  sat.addTo(mapInst);
+  L.control.layers({'🛰 Satélite':sat,'🗺 Mapa':osm}).addTo(mapInst);
+  Object.entries(POLYS).forEach(([pid,d])=>{
+    const p=PMAP[pid];
+    L.polygon(d.poly,{color:d.color,weight:2.5,opacity:.9,fillColor:d.color,fillOpacity:.15}).addTo(mapInst).bindPopup('<b style="color:'+d.color+'">'+d.name+'</b>');
+  });
+  PARCELAS.forEach(p=>{
+    const c=PLABELS[p.id];if(!c)return;
+    L.marker(c,{icon:L.divIcon({className:'',html:'<div style="background:'+p.color+'ee;color:#fff;font-size:10px;font-family:DM Mono,monospace;padding:3px 8px;border-radius:10px;white-space:nowrap;font-weight:600;box-shadow:0 1px 6px rgba(0,0,0,.5);transform:translateX(-50%)">'+p.chip+'</div>',iconSize:[0,0],iconAnchor:[0,0]})}).addTo(mapInst);
+  });
+  renderMapMarks();
+  setTimeout(()=>mapInst.invalidateSize(),400);
+}
+function renderMapMarks(){
+  mapMarks.forEach(m=>m.remove());mapMarks=[];
+  const desde=document.getElementById('mapa-desde')?.value;
+  const hasta=document.getElementById('mapa-hasta')?.value;
+  let filtered=obs;
+  if(desde)filtered=filtered.filter(o=>o.timestamp>=desde);
+  if(hasta)filtered=filtered.filter(o=>o.timestamp<=hasta+'T23:59:59');
+  filtered.forEach(o=>{
+    if(!o.lat||!o.lng)return;
+    const ti=TMAP[o.tipo]||{icon:'📍',color:'#666',label:o.tipo};
+    const p=PMAP[o.parcela_id];
+    const m=L.circleMarker([o.lat,o.lng],{radius:8,fillColor:ti.color,fillOpacity:.9,color:o.usuario_color||'#fff',weight:2}).addTo(mapInst);
+    m.bindPopup('<div style="font-family:monospace;font-size:11px;min-width:140px"><b>'+ti.icon+' '+ti.label+'</b><br><span style="color:'+(p?.color||'#888')+'">'+(p?.nombre||'Sin parcela')+'</span><br><span style="color:#999">'+fmtDate(o.timestamp)+' '+fmtTime(o.timestamp)+'</span>'+(o.nota?'<br><i>'+o.nota.substring(0,80)+'</i>':'')+'</div>');
+    mapMarks.push(m);
+  });
+  const used=[...new Set(filtered.map(o=>o.tipo))];
+  document.getElementById('map-leg').innerHTML=used.map(id=>{const t=TMAP[id]||{icon:'📍',label:id,color:'#666'};return '<div class="leg-it"><div class="leg-dot" style="background:'+t.color+'"></div><span>'+t.icon+' '+t.label+'</span></div>';}).join('');
+}
+
+// ── CLIMA ──
+async function loadClima(){
+  try{
+    const dias=parseInt(document.getElementById('hist-dias')?.value||'14');
+    const url='https://api.open-meteo.com/v1/forecast?latitude='+LAT+'&longitude='+LNG+'&current=temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code,precipitation&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,wind_speed_10m_max,weather_code&timezone=Europe%2FMadrid&forecast_days=3&past_days='+dias;
+    const d=(await(await fetch(url)).json());
+    const c=d.current,dy=d.daily;
+    const codes={0:'☀️ Despejado',1:'🌤 Mayorm. despejado',2:'⛅ Parcialm. nublado',3:'☁️ Cubierto',45:'🌫 Niebla',51:'🌦 Llovizna',61:'🌧 Lluvia leve',63:'🌧 Lluvia moderada',65:'🌧 Lluvia fuerte',80:'⛈ Chubascos',95:'⛈ Tormenta',96:'⛈ Tormenta+granizo',99:'⛈ Tormenta fuerte'};
+    document.getElementById('c-temp').textContent=Math.round(c.temperature_2m)+'°C';
+    document.getElementById('c-desc').textContent=codes[c.weather_code]||'Variable';
+    document.getElementById('c-hum').textContent=c.relative_humidity_2m+'% hum';
+    document.getElementById('c-viento').textContent=Math.round(c.wind_speed_10m)+' km/h';
+    const todayStr=new Date().toISOString().split('T')[0];
+    let ti=dy.time.indexOf(todayStr);if(ti<0)ti=dy.time.length-3;
+    document.getElementById('c-tmax').textContent=Math.round(dy.temperature_2m_max[ti])+'°';
+    document.getElementById('c-tmin').textContent=Math.round(dy.temperature_2m_min[ti])+'°';
+    document.getElementById('c-lluvia').textContent=(dy.precipitation_sum[ti]||0).toFixed(1);
+
+    // ALERTAS
+    const alertas=[];
+    for(let i=ti;i<Math.min(ti+3,dy.time.length);i++){
+      const wc=dy.weather_code?.[i];const tmin=dy.temperature_2m_min[i];const lluv=dy.precipitation_sum[i]||0;
+      const fecha=new Date(dy.time[i]+'T12:00:00').toLocaleDateString('es-ES',{weekday:'short',day:'numeric'});
+      if([95,96,99].includes(wc))alertas.push({n:'rojo',t:'⛈ Tormenta el '+fecha+' — Aplica COBRE antes (riesgo mildiu)'});
+      else if([80,81].includes(wc)||lluv>5)alertas.push({n:'naranja',t:'🌧 Lluvia el '+fecha+' ('+lluv.toFixed(1)+'mm) — Considera tratamiento preventivo'});
+      if(tmin<=0)alertas.push({n:'rojo',t:'❄️ HELADA el '+fecha+' ('+Math.round(tmin)+'°C) — Actúa ya'});
+      else if(tmin<=2)alertas.push({n:'naranja',t:'🌡 Riesgo helada el '+fecha+' ('+Math.round(tmin)+'°C) — Vigila brotes'});
+    }
+    if(c.relative_humidity_2m>80&&c.temperature_2m>10&&c.temperature_2m<30)
+      alertas.push({n:'naranja',t:'💧 Hum. '+c.relative_humidity_2m+'% con T favorable → condiciones de mildiu/oidio activas'});
+    const ae=document.getElementById('alertas-clima');
+    ae.innerHTML=alertas.length
+      ?alertas.map(a=>'<div style="background:'+(a.n==='rojo'?'#FEF0F0':'#FFF8EE')+';border-left:4px solid '+(a.n==='rojo'?'#E74C3C':'#F39C12')+';border-radius:8px;padding:9px 12px;margin-bottom:7px;font-size:11px;font-family:var(--mono);color:'+(a.n==='rojo'?'#C0392B':'#E67E22')+'">'+a.t+'</div>').join('')
+      :'<div style="background:#F0FBF0;border-left:4px solid #27AE60;border-radius:8px;padding:8px 12px;margin-bottom:7px;font-size:11px;font-family:var(--mono);color:#27AE60">✅ Sin alertas fitosanitarias (próximos 3 días)</div>';
+
+    // GRÁFICAS
+    const dates=dy.time.slice(0,dias+3),tmax=dy.temperature_2m_max.slice(0,dias+3),tminA=dy.temperature_2m_min.slice(0,dias+3),lluvia=dy.precipitation_sum.slice(0,dias+3);
+    const maxL=Math.max(...lluvia,1);const step=Math.max(1,Math.floor(dates.length/8));
+    document.getElementById('lluvia-chart').innerHTML=lluvia.map((v,i)=>{
+      const h=Math.max(2,Math.round((v/maxL)*60));const dd=new Date(dates[i]+'T12:00:00');
+      return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:1px">'+
+        '<div style="font-size:7px;color:#3498DB;font-family:var(--mono);font-weight:600;min-height:10px">'+(v>0&&i%step===0?v.toFixed(1):'')+'</div>'+
+        '<div style="width:100%;height:'+h+'px;background:#3498DB;opacity:'+(v===0?0.12:0.85)+';border-radius:2px 2px 0 0"></div>'+
+        '<div style="font-size:7px;color:var(--tl);font-family:var(--mono)">'+(i%step===0?(dd.getDate()+'/'+(dd.getMonth()+1)):'')+'</div></div>';
+    }).join('');
+    const totalPer=lluvia.reduce((a,b)=>a+b,0);
+    const porMes={};lluvia.forEach((v,i)=>{const m=dates[i].substring(0,7);porMes[m]=(porMes[m]||0)+v;});
+    document.getElementById('lluvia-lbl').textContent='Total: '+totalPer.toFixed(1)+' mm';
+    document.getElementById('lluvia-totales').innerHTML=Object.entries(porMes).map(([m,v])=>'<span style="margin-right:8px"><b>'+m.substring(5)+'</b>: '+v.toFixed(1)+'mm</span>').join('');
+    const maxT=Math.max(...tmax),minT=Math.min(...tminA),rng=maxT-minT||1;
+    document.getElementById('temp-chart').innerHTML=tmax.map((v,i)=>{
+      const hmax=Math.round(((v-minT)/rng)*50)+4,hmin=Math.round(((tminA[i]-minT)/rng)*50)+4;
+      const dd=new Date(dates[i]+'T12:00:00');
+      return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:1px">'+
+        '<div style="font-size:7px;color:#E74C3C;font-family:var(--mono);min-height:10px">'+(i%step===0?Math.round(v)+'°':'')+'</div>'+
+        '<div style="width:60%;height:'+hmax+'px;background:#E74C3C;opacity:.8;border-radius:2px 2px 0 0"></div>'+
+        '<div style="width:60%;height:'+hmin+'px;background:#3498DB;opacity:.7;border-radius:0 0 2px 2px"></div>'+
+        '<div style="font-size:7px;color:#3498DB;font-family:var(--mono);min-height:10px">'+(i%step===0?Math.round(tminA[i])+'°':'')+'</div>'+
+        '<div style="font-size:7px;color:var(--tl);font-family:var(--mono)">'+(i%step===0?(dd.getDate()+'/'+(dd.getMonth()+1)):'')+'</div></div>';
+    }).join('');
+    document.getElementById('temp-lbl').innerHTML='<span style="color:#E74C3C">■</span> Máx &nbsp;<span style="color:#3498DB">■</span> Mín · Open-Meteo/ECMWF';
+    const last7=dy.time.slice(Math.max(0,ti-6),ti+1);
+    document.getElementById('clima-tabla').innerHTML='<table class="camp-table"><thead><tr><th>FECHA</th><th style="color:#E74C3C;text-align:right">MÁX</th><th style="color:#3498DB;text-align:right">MÍN</th><th style="color:#3498DB;text-align:right">mm</th><th style="text-align:right">km/h</th></tr></thead><tbody>'+
+      last7.map(date=>{const ri=dy.time.indexOf(date);if(ri<0)return'';const dd=new Date(date+'T12:00:00');const rain=dy.precipitation_sum[ri];return '<tr><td>'+dd.toLocaleDateString('es-ES',{weekday:'short',day:'2-digit',month:'short'})+'</td><td style="color:#E74C3C;font-weight:600;text-align:right">'+Math.round(dy.temperature_2m_max[ri])+'°</td><td style="color:#3498DB;font-weight:600;text-align:right">'+Math.round(dy.temperature_2m_min[ri])+'°</td><td style="color:'+(rain>0?'#3498DB':'#ccc')+';text-align:right">'+(rain>0?rain.toFixed(1):'—')+'</td><td style="text-align:right;color:var(--tl)">'+Math.round(dy.wind_speed_10m_max[ri])+'</td></tr>';}).join('')+'</tbody></table>';
+  }catch(e){document.getElementById('c-desc').textContent='Sin conexión';}
+}
+
+// ── FICHAS ──
+function renderFichas(){
+  const yr=campaniaActual;
+  let html='<div class="card" style="margin-bottom:12px"><div class="sl" style="margin-bottom:8px">Campaña activa</div>'+
+    '<div style="display:flex;align-items:center;gap:10px">'+
+    '<button onclick="chgYr(-1)" style="padding:6px 14px;border-radius:8px;border:1.5px solid var(--cd);background:#fff;font-size:16px;cursor:pointer">‹</button>'+
+    '<div style="flex:1;text-align:center;font-size:20px;font-weight:300">'+yr+'/'+(yr+1)+'</div>'+
+    '<button onclick="chgYr(1)" style="padding:6px 14px;border-radius:8px;border:1.5px solid var(--cd);background:#fff;font-size:16px;cursor:pointer">›</button>'+
+    '</div></div>';
+  // Notas generales
+  const ngs=notasGenerales.filter(n=>n.year===yr);
+  html+='<div class="card" style="margin-bottom:12px;border-left:4px solid var(--oro)">'+
+    '<div class="sl" style="margin-bottom:6px">🌍 Notas generales zona · '+yr+'/'+( yr+1)+'</div>'+
+    '<div style="display:flex;gap:6px;margin-bottom:8px">'+
+    '<textarea id="ng-inp" rows="2" placeholder="Heladas, sequía, granizo..." style="flex:1;font-size:12px;resize:none;padding:7px 9px;border-radius:8px;border:1.5px solid var(--cd)"></textarea>'+
+    '<button onclick="saveNG()" style="padding:8px 12px;border-radius:8px;border:none;background:var(--oro);color:#fff;font-size:18px;cursor:pointer;align-self:flex-end">+</button>'+
+    '</div>'+
+    (ngs.length?ngs.map(n=>{const nid=n.id||n.ts;return '<div class="nota-item" style="border-left:3px solid var(--oro)">'+
+      (editNGId===nid?'<textarea id="nge-'+nid+'" rows="2" style="width:100%;font-size:12px;resize:none;padding:6px;border-radius:6px;border:1.5px solid var(--cd)">'+n.nota+'</textarea>'+
+        '<div style="display:flex;gap:5px;margin-top:5px">'+
+        '<button onclick="saveNGEdit('+nid+')" style="flex:1;padding:5px;border-radius:6px;border:none;background:var(--v);color:#fff;font-size:11px;cursor:pointer">💾</button>'+
+        '<button onclick="editNGId=null;renderFichas()" style="flex:1;padding:5px;border-radius:6px;border:1.5px solid var(--cd);background:#fff;font-size:11px;cursor:pointer">✕</button>'+
+        '</div>'
+      :'<div style="font-size:12px;font-style:italic">'+n.nota+'</div>'+
+        '<div style="font-size:9px;color:var(--tl);font-family:var(--mono);margin-top:3px">'+fmtDate(n.timestamp)+'</div>'+
+        '<div class="nota-actions">'+
+        '<button class="nota-btn" style="border:1.5px solid var(--cd);background:#fff" onclick="editNGId='+nid+';renderFichas()">✏️</button>'+
+        '<button class="nota-btn" style="border:none;background:#FEF0F0;color:#C0392B" onclick="delNG('+nid+')">🗑</button>'+
+        '</div>')+
+    '</div>';}).join(''):'<div style="font-size:11px;color:#ccc;font-family:var(--mono)">Sin notas este año</div>')+
+  '</div>';
+  // Fichas por parcela
+  html+=PARCELAS.map(p=>{
+    const f=fichas[p.id]||{};
+    const camp=campanias[p.id]?.[yr]||{};
+    const notasP=notasAnuales.filter(n=>n.parcela_id===p.id&&n.year===yr);
+    return '<div class="ficha">'+
+      '<div class="fhdr"><div class="fdot" style="background:'+p.color+'"></div><div class="ftitle">'+p.nombre+'</div></div>'+
+      '<details><summary style="font-size:10px;font-family:var(--mono);color:var(--tl);cursor:pointer;text-transform:uppercase;letter-spacing:1px">🌿 Datos fijos</summary>'+
+      '<div class="fgrid" style="margin-top:8px">'+
+        '<div class="ff"><label>Variedad</label><input id="f-'+p.id+'-var" value="'+esc(f.variedad||p.nombre)+'"></div>'+
+        '<div class="ff"><label>Clon</label><input id="f-'+p.id+'-clon" value="'+esc(f.clon||'')+'"></div>'+
+        '<div class="ff"><label>Portainjerto</label><input id="f-'+p.id+'-port" value="'+esc(f.portainjerto||'')+'"></div>'+
+        '<div class="ff"><label>Año plantación</label><input id="f-'+p.id+'-anio" value="'+esc(f.anio||'')+'"></div>'+
+        '<div class="ff"><label>Suelo</label><input id="f-'+p.id+'-suelo" value="'+esc(f.suelo||'')+'"></div>'+
+        '<div class="ff"><label>Altitud (m)</label><input id="f-'+p.id+'-alt" value="'+esc(f.altitud||'')+'"></div>'+
+        '<div class="ff"><label>Orientación</label><input id="f-'+p.id+'-ori" value="'+esc(f.orientacion||'')+'"></div>'+
+        '<div class="ff"><label>Marco (m)</label><input id="f-'+p.id+'-marco" value="'+esc(f.marco||'')+'"></div>'+
+        '<div class="ff full"><label>Notas fijas</label><input id="f-'+p.id+'-notas" value="'+esc(f.notas||'')+'"></div>'+
+      '</div>'+
+      '<button class="fsave" onclick="saveFicha(\''+p.id+'\')">💾 Guardar datos fijos</button></details>'+
+      // Campaña
+      '<div style="margin-top:12px;border-top:1px solid var(--cd);padding-top:12px">'+
+      '<div class="sl" style="margin-bottom:8px">📊 Campaña '+yr+'/'+(yr+1)+'</div>'+
+      '<div class="fgrid">'+
+        '<div class="ff"><label>Kg totales</label><input type="number" id="m-'+p.id+'-kg" value="'+(camp.kg_total||'')+'" placeholder="0"></div>'+
+        '<div class="ff"><label>Nº cepas</label><input type="number" id="m-'+p.id+'-cepas" value="'+(camp.n_cepas||'')+'" placeholder="0"></div>'+
+        '<div class="ff"><label>Madera poda (g/cepa)</label><input type="number" id="m-'+p.id+'-madera" value="'+(camp.peso_madera||'')+'" placeholder="g"></div>'+
+        '<div class="ff"><label>Peso racimo (g)</label><input type="number" id="m-'+p.id+'-pracimo" value="'+(camp.peso_racimo||'')+'" placeholder="g"></div>'+
+        '<div class="ff"><label>Racimos/cepa</label><input type="number" id="m-'+p.id+'-nracimos" value="'+(camp.n_racimos||'')+'" placeholder="0"></div>'+
+        '<div class="ff"><label>Grado alcohólico</label><input type="number" id="m-'+p.id+'-grado" value="'+(camp.grado||'')+'" step="0.1" placeholder="°"></div>'+
+        '<div class="ff"><label>Superficie (ha)</label><input type="number" id="m-'+p.id+'-ha" value="'+(camp.ha||f.ha||'')+'" step="0.01"></div>'+
+        '<div class="ff"><label>Fecha vendimia</label><input type="date" id="m-'+p.id+'-fvend" value="'+(camp.fecha_vendimia||'')+'"></div>'+
+        '<div class="ff full"><label>Notas campaña</label><input id="m-'+p.id+'-ncamp" value="'+esc(camp.notas_camp||'')+'"></div>'+
+      '</div>'+
+      '<div id="rav-'+p.id+'" style="display:none" class="ravaz"></div>'+
+      '<div style="display:flex;gap:6px;margin-top:8px">'+
+        '<button class="fsave" style="background:var(--vm);flex:1" onclick="calcRav(\''+p.id+'\')">⚖️ Ravaz</button>'+
+        '<button class="fsave" style="flex:2" onclick="saveMetr(\''+p.id+'\')">💾 Guardar campaña '+yr+'</button>'+
+      '</div></div>'+
+      // Histórico
+      (Object.keys(campanias[p.id]||{}).filter(y=>parseInt(y)!==yr).length>0?
+        '<details style="margin-top:10px;border-top:1px solid var(--cd);padding-top:10px"><summary style="font-size:10px;font-family:var(--mono);color:var(--tl);cursor:pointer;text-transform:uppercase;letter-spacing:1px">📈 Histórico campañas</summary>'+
+        '<table class="camp-table" style="margin-top:8px"><thead><tr><th>AÑO</th><th style="text-align:right">KG</th><th style="text-align:right">°ALC</th><th style="text-align:right">RAVAZ</th></tr></thead><tbody>'+
+        Object.entries(campanias[p.id]).sort((a,b)=>b[0]-a[0]).map(([y,c])=>{
+          const rv=c.kg_total&&c.peso_madera&&c.n_cepas?((c.kg_total/c.n_cepas)/(c.peso_madera/1000)).toFixed(1):'—';
+          return '<tr><td>'+y+'/'+(parseInt(y)+1)+'</td><td style="text-align:right;font-weight:600;color:var(--v)">'+(c.kg_total||'—')+'</td><td style="text-align:right">'+(c.grado?c.grado+'°':'—')+'</td><td style="text-align:right;color:'+(rv!=='—'&&parseFloat(rv)>=3&&parseFloat(rv)<=6?'#27AE60':'#E67E22')+'">'+rv+'</td></tr>';
+        }).join('')+'</tbody></table></details>':'')+
+      // Notas anuales
+      '<div style="margin-top:12px;border-top:1px solid var(--cd);padding-top:12px">'+
+      '<div class="sl" style="margin-bottom:8px">📓 Notas '+yr+' · '+p.nombre+'</div>'+
+      '<div style="display:flex;gap:6px;margin-bottom:8px">'+
+        '<textarea id="na-'+p.id+'" rows="2" placeholder="Helada, plagas, sequía..." style="flex:1;font-size:12px;resize:none;padding:7px 9px;border-radius:8px;border:1.5px solid var(--cd)"></textarea>'+
+        '<button onclick="saveNA(\''+p.id+'\')" style="padding:8px 12px;border-radius:8px;border:none;background:var(--v);color:#fff;font-size:18px;cursor:pointer;align-self:flex-end">+</button>'+
+      '</div>'+
+      (notasP.length?notasP.map(n=>{const nid=n.id||n.ts;return '<div class="nota-item" style="border-left:3px solid '+p.color+'">'+
+        (editNAId===nid?'<textarea id="nae-'+nid+'" rows="2" style="width:100%;font-size:12px;resize:none;padding:6px;border-radius:6px;border:1.5px solid var(--cd)">'+n.nota+'</textarea>'+
+          '<div style="display:flex;gap:5px;margin-top:5px">'+
+          '<button onclick="saveNAEdit('+nid+')" style="flex:1;padding:5px;border-radius:6px;border:none;background:var(--v);color:#fff;font-size:11px;cursor:pointer">💾</button>'+
+          '<button onclick="editNAId=null;renderFichas()" style="flex:1;padding:5px;border-radius:6px;border:1.5px solid var(--cd);background:#fff;font-size:11px;cursor:pointer">✕</button>'+
+          '</div>'
+        :'<div style="font-size:12px;font-style:italic">'+n.nota+'</div>'+
+          '<div style="font-size:9px;color:var(--tl);font-family:var(--mono);margin-top:3px">'+fmtDate(n.timestamp)+'</div>'+
+          '<div class="nota-actions">'+
+          '<button class="nota-btn" style="border:1.5px solid var(--cd);background:#fff" onclick="editNAId='+nid+';renderFichas()">✏️</button>'+
+          '<button class="nota-btn" style="border:none;background:#FEF0F0;color:#C0392B" onclick="delNA('+nid+')">🗑</button>'+
+          '</div>')+'</div>';}).join(''):'<div style="font-size:11px;color:#ccc;font-family:var(--mono)">Sin notas este año</div>')+
+      '</div></div>';
+  }).join('');
+  document.getElementById('fichas-wrap').innerHTML=html;
+}
+function esc(s){return String(s).replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+function chgYr(d){campaniaActual+=d;renderFichas();}
+
+// FICHA SAVE
+async function saveFicha(pid){
+  const g=k=>document.getElementById('f-'+pid+'-'+k)?.value||'';
+  const r={parcela_id:pid,variedad:g('var'),clon:g('clon'),portainjerto:g('port'),anio:g('anio'),suelo:g('suelo'),altitud:g('alt'),orientacion:g('ori'),marco:g('marco'),notas:g('notas')};
+  fichas[pid]={...fichas[pid]||{},...r};
+  await dbupsert('fichas',r,'parcela_id');
+}
+async function saveMetr(pid){
+  const gm=k=>document.getElementById('m-'+pid+'-'+k)?.value||null;
+  const r={parcela_id:pid,year:campaniaActual,kg_total:gm('kg'),n_cepas:gm('cepas'),peso_madera:gm('madera'),peso_racimo:gm('pracimo'),n_racimos:gm('nracimos'),grado:gm('grado'),ha:gm('ha'),fecha_vendimia:gm('fvend'),notas_camp:gm('ncamp')};
+  if(!campanias[pid])campanias[pid]={};campanias[pid][campaniaActual]=r;
+  await dbupsert('campanias',r,'parcela_id,year');
+  renderFichas();
+}
+function calcRav(pid){
+  const kg=parseFloat(document.getElementById('m-'+pid+'-kg')?.value);
+  const mad=parseFloat(document.getElementById('m-'+pid+'-madera')?.value);
+  const cep=parseFloat(document.getElementById('m-'+pid+'-cepas')?.value);
+  const el=document.getElementById('rav-'+pid);
+  if(isNaN(kg)||isNaN(mad)||isNaN(cep)||!cep||!mad){el.style.display='none';alert('Necesitas kg totales, madera y nº cepas');return;}
+  const rv=(kg/cep)/(mad/1000);
+  let interp=rv<3?'⚠️ Vigor excesivo':rv<=6?'✅ Equilibrio óptimo (3–6)':rv<=10?'⚠️ Sobreproducción':'🚨 Sobreproducción severa';
+  el.style.display='block';
+  el.innerHTML='<div class="ravaz-n">'+rv.toFixed(2)+'</div><div class="ravaz-l">ÍNDICE RAVAZ</div><div class="ravaz-i">'+interp+'</div>';
+}
+
+// NOTAS GENERALES
+async function saveNG(){
+  const ta=document.getElementById('ng-inp');const nota=ta?.value?.trim();if(!nota)return;
+  const r={year:campaniaActual,nota,usuario:user,usuario_color:userColor,timestamp:new Date().toISOString(),ts:Date.now()};
+  notasGenerales.unshift(r);ta.value='';renderFichas();await dbsave('notas_generales',r);
+}
+async function saveNGEdit(id){
+  const el=document.getElementById('nge-'+id);const nueva=el?.value?.trim();if(!nueva)return;
+  const idx=notasGenerales.findIndex(n=>(n.id||n.ts)===id);
+  if(idx>=0){notasGenerales[idx].nota=nueva;if(notasGenerales[idx].id)await db.from('notas_generales').update({nota:nueva}).eq('id',notasGenerales[idx].id);}
+  editNGId=null;renderFichas();syncOK('✓ Editado');setTimeout(hideSync,1200);
+}
+async function delNG(id){
+  if(!confirm('¿Borrar?'))return;
+  const idx=notasGenerales.findIndex(n=>(n.id||n.ts)===id);
+  if(idx>=0){if(notasGenerales[idx].id)await db.from('notas_generales').delete().eq('id',notasGenerales[idx].id);notasGenerales.splice(idx,1);}
+  renderFichas();syncOK('✓ Borrado');setTimeout(hideSync,1200);
+}
+
+// NOTAS ANUALES
+async function saveNA(pid){
+  const ta=document.getElementById('na-'+pid);const nota=ta?.value?.trim();if(!nota)return;
+  const r={parcela_id:pid,year:campaniaActual,nota,usuario:user,usuario_color:userColor,timestamp:new Date().toISOString(),ts:Date.now()};
+  notasAnuales.unshift(r);ta.value='';renderFichas();await dbsave('notas_anuales',r);
+}
+async function saveNAEdit(id){
+  const el=document.getElementById('nae-'+id);const nueva=el?.value?.trim();if(!nueva)return;
+  const idx=notasAnuales.findIndex(n=>(n.id||n.ts)===id);
+  if(idx>=0){notasAnuales[idx].nota=nueva;if(notasAnuales[idx].id)await db.from('notas_anuales').update({nota:nueva}).eq('id',notasAnuales[idx].id);}
+  editNAId=null;renderFichas();syncOK('✓ Editado');setTimeout(hideSync,1200);
+}
+async function delNA(id){
+  if(!confirm('¿Borrar?'))return;
+  const idx=notasAnuales.findIndex(n=>(n.id||n.ts)===id);
+  if(idx>=0){if(notasAnuales[idx].id)await db.from('notas_anuales').delete().eq('id',notasAnuales[idx].id);notasAnuales.splice(idx,1);}
+  renderFichas();syncOK('✓ Borrado');setTimeout(hideSync,1200);
+}
+
+// ── CALENDARIO ──
+const MESES=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+let calYear=new Date().getFullYear(),calMonth=new Date().getMonth(),calDia=null;
+
+// Eventos reales de Google Calendar (cargados 27/04/2026)
+const GCAL_EVENTS=[
+  // Cuaderno Campo Esperanza
+  {fecha:'2026-03-02',txt:'✅ Termino poda',color:'#9B59B6',cal:'Esperanza'},
+  {fecha:'2026-03-07',txt:'🌧 Lluvia 30 litros',color:'#3498DB',cal:'Esperanza'},
+  {fecha:'2026-03-30',txt:'❄️ Poquita helada moscatel',color:'#9B59B6',cal:'Esperanza'},
+  {fecha:'2026-04-15',txt:'🟡 Azufre a moscatel',color:'#9B59B6',cal:'Esperanza'},
+  // Fases de luna
+  {fecha:'2026-05-01',txt:'🌕 Luna llena',color:'#7F8C8D',cal:'Luna'},
+  {fecha:'2026-05-09',txt:'🌗 Cuarto menguante',color:'#7F8C8D',cal:'Luna'},
+  {fecha:'2026-05-16',txt:'🌑 Luna nueva',color:'#7F8C8D',cal:'Luna'},
+  {fecha:'2026-05-23',txt:'🌓 Cuarto creciente',color:'#7F8C8D',cal:'Luna'},
+  {fecha:'2026-05-31',txt:'🌕 Luna llena',color:'#7F8C8D',cal:'Luna'},
+  {fecha:'2026-06-08',txt:'🌗 Cuarto menguante',color:'#7F8C8D',cal:'Luna'},
+  {fecha:'2026-06-15',txt:'🌑 Luna nueva',color:'#7F8C8D',cal:'Luna'},
+  {fecha:'2026-06-21',txt:'🌓 Cuarto creciente',color:'#7F8C8D',cal:'Luna'},
+  {fecha:'2026-06-30',txt:'🌕 Luna llena',color:'#7F8C8D',cal:'Luna'},
+  {fecha:'2026-07-07',txt:'🌗 Cuarto menguante',color:'#7F8C8D',cal:'Luna'},
+  {fecha:'2026-07-14',txt:'🌑 Luna nueva',color:'#7F8C8D',cal:'Luna'},
+  {fecha:'2026-07-21',txt:'🌓 Cuarto creciente',color:'#7F8C8D',cal:'Luna'},
+  {fecha:'2026-07-29',txt:'🌕 Luna llena',color:'#7F8C8D',cal:'Luna'},
+];
+
+let tareasPrevistas=[];
+
+function calMes(d){calMonth+=d;if(calMonth>11){calMonth=0;calYear++;}if(calMonth<0){calMonth=11;calYear--;}renderCal();}
+
+function initCal(){
+  const sel=document.getElementById('cal-parcela');
+  if(sel&&sel.options.length===1)PARCELAS.forEach(p=>{const o=document.createElement('option');o.value=p.id;o.textContent=p.nombre;sel.appendChild(o);});
+  renderCal();
+}
+
+function renderCal(){
+  document.getElementById('cal-titulo').textContent=MESES[calMonth]+' '+calYear;
+  const primerDia=new Date(calYear,calMonth,1);
+  let dow=primerDia.getDay();dow=dow===0?6:dow-1;
+  const diasMes=new Date(calYear,calMonth+1,0).getDate();
+  const hoy=new Date().toISOString().split('T')[0];
+
+  // Index all events by date
+  const evs={};
+  const addEv=(f,ev)=>{if(!evs[f])evs[f]=[];evs[f].push(ev);};
+
+  // Tareas de Supabase/local
+  tareas.forEach(t=>{
+    const f=t.timestamp.split('T')[0];
+    const p=PMAP[t.parcela_id];const ta=TAREAS_L.find(x=>x.id===t.tarea);
+    addEv(f,{txt:(ta?.icon||'✅')+' '+(ta?.label||t.tarea)+(p?' · '+p.chip:''),color:p?.color||'#27AE60',cal:'App'});
+  });
+  // Google Calendar events
+  GCAL_EVENTS.forEach(e=>addEv(e.fecha,e));
+  // Tareas previstas
+  tareasPrevistas.forEach(t=>addEv(t.fecha,{txt:'📅 '+t.tipo+(t.parcela?' · '+(PMAP[t.parcela]?.chip||''):''),color:'#C8A85A',cal:'Prevista',nota:t.nota}));
+
+  let html='';
+  for(let i=0;i<dow;i++)html+='<div></div>';
+  for(let d=1;d<=diasMes;d++){
+    const f=calYear+'-'+String(calMonth+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    const dayEvs=evs[f]||[];
+    const esHoy=f===hoy,esSel=f===calDia;
+    const dots=[...new Set(dayEvs.map(e=>e.color))].slice(0,3);
+    html+='<div onclick="selDia(\''+f+'\')" style="aspect-ratio:1;border-radius:7px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;font-size:11px;font-family:var(--mono);background:'+(esSel?'var(--v)':esHoy?'#EDF7ED':'#fff')+';color:'+(esSel?'#fff':esHoy?'var(--v)':'var(--tx)')+';border:1.5px solid '+(esSel?'var(--v)':esHoy?'var(--vl)':'var(--cd)')+';font-weight:'+(esHoy||esSel?700:400)+'">'+d+
+      (dots.length?'<div style="display:flex;gap:2px;margin-top:1px">'+dots.map(c=>'<div style="width:4px;height:4px;border-radius:50%;background:'+c+'"></div>').join('')+'</div>':'')+
+    '</div>';
+  }
+  document.getElementById('cal-grid').innerHTML=html;
+
+  if(calDia){
+    const dayEvs=evs[calDia]||[];
+    const dd=new Date(calDia+'T12:00:00');
+    const lbl=dd.toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'});
+    let det='<div class="card"><div style="font-size:13px;font-weight:600;margin-bottom:10px;text-transform:capitalize">'+lbl+'</div>';
+    if(!dayEvs.length)det+='<div style="font-size:11px;color:#ccc;font-family:var(--mono)">Sin actividad</div>';
+    else det+=dayEvs.map(e=>'<div style="display:flex;align-items:flex-start;gap:8px;padding:5px 0;border-bottom:1px solid var(--cd)"><div style="width:7px;height:7px;border-radius:50%;background:'+e.color+';flex-shrink:0;margin-top:4px"></div><div><div style="font-size:11px;font-family:var(--mono);font-weight:600">'+e.txt+'</div>'+(e.cal?'<div style="font-size:9px;color:var(--tl)">'+e.cal+'</div>':'')+(e.nota?'<div style="font-size:10px;color:var(--tl);font-style:italic">'+e.nota+'</div>':'')+'</div></div>').join('');
+    det+='</div>';
+    document.getElementById('cal-detalle').innerHTML=det;
+    document.getElementById('cal-nueva').style.display='block';
+    document.getElementById('cal-fecha').value=calDia;
+  } else {
+    document.getElementById('cal-detalle').innerHTML='<div style="text-align:center;font-size:11px;color:#ccc;font-family:var(--mono);padding:12px 0">Pulsa un día para ver detalle</div>';
+    document.getElementById('cal-nueva').style.display='none';
+  }
+}
+
+function selDia(f){calDia=calDia===f?null:f;renderCal();}
+
+async function guardarTareaCalendario(){
+  const fecha=document.getElementById('cal-fecha').value;
+  const tipo=document.getElementById('cal-tipo').value;
+  const pid=document.getElementById('cal-parcela').value;
+  const nota=document.getElementById('cal-nota').value.trim();
+  if(!fecha)return;
+  const t={fecha,tipo,parcela:pid,nota,usuario:user,ts:Date.now()};
+  tareasPrevistas.push(t);
+  document.getElementById('cal-nota').value='';
+  renderCal();
+  syncOK('📅 Tarea prevista guardada');setTimeout(hideSync,1500);
+  await dbsave('gcal_pending',{titulo:'📅 '+tipo+(pid?' · '+(PMAP[pid]?.nombre||''):''),fecha,descripcion:nota||tipo,prevista:true,usuario:user,timestamp:new Date().toISOString()});
+}
+
+// ── TABS ──
+const PTITLES={obs:'🌿 Observar',tareas:'✅ Tareas · Calendario',mapa:'🗺 Mapa',hist:'📋 Historial',clima:'🌡 Clima',fichas:'🍇 Fichas'};
+const PTABS=['obs','tareas','mapa','hist','clima','fichas'];
+function goTab(name){
+  curTab=name;
+  document.querySelectorAll('.panel').forEach(p=>{p.classList.remove('act');p.style.display='none';});
+  document.querySelectorAll('.tb').forEach(b=>b.classList.remove('act'));
+  document.getElementById('p-'+name).style.display='block';
+  document.getElementById('p-'+name).classList.add('act');
+  document.querySelectorAll('.tb')[PTABS.indexOf(name)].classList.add('act');
+  document.getElementById('ptitle').textContent=PTITLES[name];
+  if(name==='mapa')setTimeout(initMap,120);
+  if(name==='tareas')setTimeout(initCal,50);
+  if(name==='hist')renderHist();
+  if(name==='clima'){loadClima();renderPluvHist();}
+  if(name==='fichas')renderFichas();
+}
+
+// ── EXPORT ──
+function exportar(){
+  const d={observaciones:obs,tareas,fichas,fenologia:fenoLog,pluvio:pluvioLog,notas_anuales:notasAnuales,notas_generales:notasGenerales,campanias,exportado:new Date().toISOString()};
+  const b=new Blob([JSON.stringify(d,null,2)],{type:'application/json'});
+  const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;
+  a.download='campo-torres-filoso-'+new Date().toISOString().split('T')[0]+'.json';a.click();
+}
+
+// ── UTILS ──
+function fmtTime(ts){return new Date(ts).toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'});}
+function fmtDate(ts){return new Date(ts).toLocaleDateString('es-ES',{day:'2-digit',month:'short'});}
+
+// Init
+document.querySelectorAll('.panel').forEach(p=>p.style.display='none');
+document.getElementById('p-obs').style.display='block';
+</script>
+</body>
+</html>
