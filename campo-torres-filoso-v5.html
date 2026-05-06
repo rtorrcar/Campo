@@ -246,19 +246,17 @@ button:active{transform:scale(.97)}
 
   <!-- TAREAS + CALENDARIO -->
   <div id="p-tareas" class="panel">
-    <!-- CALENDARIO -->
-    <div style="margin-bottom:14px">
+    <!-- CALENDARIO UNIFICADO -->
+    <div style="margin-bottom:10px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
         <button onclick="calMes(-1)" style="padding:5px 12px;border-radius:8px;border:1.5px solid var(--cd);background:#fff;font-size:15px;cursor:pointer">‹</button>
         <div id="cal-titulo" style="font-size:15px;font-weight:300;text-align:center;font-family:Georgia,serif"></div>
         <button onclick="calMes(1)" style="padding:5px 12px;border-radius:8px;border:1.5px solid var(--cd);background:#fff;font-size:15px;cursor:pointer">›</button>
       </div>
-      <!-- Leyenda calendarios -->
-      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:6px;font-size:9px;font-family:var(--mono);color:var(--tl)">
-        <span><span style="color:#27AE60">●</span> Tareas app</span>
-        <span><span style="color:#3498DB">●</span> Viña Grande</span>
-        <span><span style="color:#9B59B6">●</span> Cuaderno Esperanza</span>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px;font-size:9px;font-family:var(--mono);color:var(--tl)">
+        <span><span style="color:#27AE60">●</span> Hechas</span>
         <span><span style="color:#C8A85A">●</span> Previstas</span>
+        <span><span style="color:#9B59B6">●</span> Esperanza</span>
         <span><span style="color:#7F8C8D">●</span> Luna</span>
       </div>
       <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:3px">
@@ -271,47 +269,53 @@ button:active{transform:scale(.97)}
         <div style="text-align:center;font-size:9px;font-family:var(--mono);color:var(--tl)">D</div>
       </div>
       <div id="cal-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px"></div>
-      <div id="cal-detalle" style="margin-top:10px">
-        <div style="text-align:center;font-size:11px;color:#ccc;font-family:var(--mono);padding:12px 0">Pulsa un día para ver detalle</div>
-      </div>
-      <div id="cal-nueva" class="card" style="margin-top:8px;display:none">
-        <div class="sl" style="margin-bottom:8px">📅 Nueva tarea prevista</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
-          <div><label style="font-size:9px;font-family:var(--mono);color:var(--tl);text-transform:uppercase;display:block;margin-bottom:3px">Fecha</label>
-            <input type="date" id="cal-fecha"></div>
-          <div><label style="font-size:9px;font-family:var(--mono);color:var(--tl);text-transform:uppercase;display:block;margin-bottom:3px">Parcela</label>
-            <select id="cal-parcela" style="font-size:11px">
-              <option value="">Toda la finca</option>
-            </select>
+      <!-- DETALLE + FORM UNIFICADO -->
+      <div id="cal-dia-wrap" style="display:none;margin-top:10px">
+        <div class="card" style="margin-bottom:8px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <div id="cal-dia-titulo" style="font-size:13px;font-weight:600;text-transform:capitalize"></div>
+            <button onclick="selDia(null)" style="padding:2px 8px;border-radius:6px;border:1.5px solid var(--cd);background:#fff;font-size:11px;cursor:pointer;font-family:var(--mono)">✕</button>
           </div>
+          <div id="cal-dia-eventos"></div>
         </div>
-        <div style="margin-bottom:8px">
-          <label style="font-size:9px;font-family:var(--mono);color:var(--tl);text-transform:uppercase;display:block;margin-bottom:3px">Tarea</label>
-          <select id="cal-tipo" style="font-size:12px">
-            <option>Poda en verde</option><option>Poda en seco</option>
-            <option>Tratamiento fitosanitario</option><option>Azufrado</option>
-            <option>Cobrizado</option><option>Abonado</option>
-            <option>Gestión cubierta vegetal</option><option>Riego</option>
-            <option>Analítica suelo/hoja</option><option>Vendimia</option><option>Otra</option>
-          </select>
+        <div class="card">
+          <div class="sl" style="margin-bottom:8px">+ Añadir tarea</div>
+          <div style="display:flex;gap:6px;margin-bottom:10px">
+            <button id="btn-tipo-hecha" onclick="setTipoFecha('hecha')" style="flex:1;padding:8px;border-radius:8px;border:2px solid #27AE60;background:#F0FBF0;color:#27AE60;font-size:11px;font-weight:700;cursor:pointer;font-family:var(--mono)">✅ Hecha</button>
+            <button id="btn-tipo-prev" onclick="setTipoFecha('prevista')" style="flex:1;padding:8px;border-radius:8px;border:1.5px solid var(--cd);background:#fff;color:#888;font-size:11px;cursor:pointer;font-family:var(--mono)">📅 Prevista</button>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+            <div><label style="font-size:9px;font-family:var(--mono);color:var(--tl);text-transform:uppercase;display:block;margin-bottom:3px">Parcela</label>
+              <select id="cal-parcela" style="font-size:11px;width:100%;padding:6px 8px;border-radius:7px;border:1.5px solid var(--cd)">
+                <option value="">Toda la finca</option>
+              </select>
+            </div>
+            <div><label style="font-size:9px;font-family:var(--mono);color:var(--tl);text-transform:uppercase;display:block;margin-bottom:3px">Tarea</label>
+              <select id="cal-tipo" style="font-size:11px;width:100%;padding:6px 8px;border-radius:7px;border:1.5px solid var(--cd)">
+                <option value="poda_verde">✂️ Poda en verde</option>
+                <option value="poda_seco">🪚 Poda en seco</option>
+                <option value="tratamiento">💊 Tratamiento</option>
+                <option value="azufrado">🟡 Azufrado</option>
+                <option value="cobrizado">🔵 Cobrizado</option>
+                <option value="abonado">🌱 Abonado</option>
+                <option value="cubierta">🌿 Cubierta vegetal</option>
+                <option value="riego">💧 Riego</option>
+                <option value="analitica">🧪 Analítica</option>
+                <option value="vendimia">🍇 Vendimia</option>
+                <option value="plantacion">🌱 Plantación</option>
+                <option value="otra">📝 Otra</option>
+              </select>
+            </div>
+          </div>
+          <div class="nwrap" style="margin-bottom:8px">
+            <textarea id="cal-nota" rows="2" placeholder="Detalle, zona, cantidad... (o dicta 🎙)" style="padding-right:44px"></textarea>
+            <button class="micbtn" id="mic-cal" onclick="toggleMic('cal')">🎙</button>
+          </div>
+          <div class="micst" id="mst-cal">● Grabando...</div>
+          <button class="savebtn" id="btn-cal-save" onclick="guardarTareaUnificada()">✅ Guardar tarea</button>
         </div>
-        <input type="text" id="cal-nota" placeholder="Nota opcional..." style="margin-bottom:8px">
-        <button class="savebtn" onclick="guardarTareaCalendario()">📅 Guardar en calendario</button>
       </div>
-    </div>
-    <div style="border-top:1.5px solid var(--cd);padding-top:14px">
-      <div class="sl">Registrar tarea realizada</div>
-      <div class="tlist" id="tareas-grid"></div>
-      <div id="tarea-extra" style="display:none">
-        <div class="sl">Detalle</div>
-        <div class="nwrap">
-          <textarea id="nota-tarea" rows="2" placeholder="Hileras, zona, cantidad..."></textarea>
-          <button class="micbtn" id="mic-tarea" onclick="toggleMic('tarea')">🎙</button>
-        </div>
-        <div class="micst" id="mst-tarea">● Grabando...</div>
-        <button class="savebtn" id="btn-tarea" onclick="saveTarea()">✅ Registrar tarea</button>
-        <div class="warn" id="w-tarea" style="display:none">⚠ Selecciona parcela arriba</div>
-      </div>
+      <div id="cal-hint" style="text-align:center;font-size:11px;color:#ccc;font-family:var(--mono);padding:14px 0">Pulsa un día para ver detalle o añadir tarea</div>
     </div>
   </div>
 
@@ -567,19 +571,15 @@ function syncWarn(m){const b=document.getElementById('sync');b.textContent=m;b.s
 function hideSync(){document.getElementById('sync').classList.remove('on');}
 
 async function loadSupa(){
-  // Local first
-  const lo=lload('observaciones');
-  const lt=lload('tareas');
-  const lf=lload('fichas');
-  const lp=lload('pluvio');
-  const legIds=new Set(LEGACY.map(l=>l.legacy_id));
-  const localOnly=lo.filter(o=>!legIds.has(o.legacy_id));
-  obs=[...localOnly,...LEGACY].sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp));
+  // Fase 1: mostrar legacy inmediatamente mientras carga Supabase
+  obs=[...LEGACY];
+  const lt=lload('tareas');const lf=lload('fichas');const lp=lload('pluvio');
   if(lt.length)tareas=lt;
   lf.forEach(f=>{if(f.parcela_id)fichas[f.parcela_id]=f;});
   if(lp.length)pluvioLog=lp;
   renderHist();renderFichas();renderPluvHist();
-  // Then Supabase
+
+  // Fase 2: cargar desde Supabase (fuente de verdad)
   try{
     const{data:so}=await db.from('observaciones').select('*').order('timestamp',{ascending:false}).limit(500);
     const{data:st}=await db.from('tareas').select('*').order('timestamp',{ascending:false}).limit(200);
@@ -590,12 +590,28 @@ async function loadSupa(){
     const{data:na}=await db.from('notas_anuales').select('*').order('timestamp',{ascending:false});
     const{data:ng}=await db.from('notas_generales').select('*').order('timestamp',{ascending:false});
     const{data:ca}=await db.from('campanias').select('*');
-    if(so&&so.length>0){
-      const sids=new Set(so.map(o=>o.local_id||o.legacy_id).filter(Boolean));
-      const onlyLoc=obs.filter(o=>{const lid=o.local_id||o.legacy_id;return lid&&!sids.has(lid)&&!o.id;});
-      obs=[...so,...onlyLoc].sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp));
-      onlyLoc.forEach(l=>{if(!l.legacy_id)dbsave('observaciones',l);});
+
+    // Observaciones: Supabase es la fuente de verdad
+    // Añadir solo las legacy que no estén ya en Supabase
+    if(so){
+      const supaLegacyIds=new Set(so.map(o=>o.legacy_id).filter(Boolean));
+      const legacyNoSubidas=LEGACY.filter(l=>!supaLegacyIds.has(l.legacy_id));
+      obs=[...so,...legacyNoSubidas].sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp));
+      // Subir legacy que faltan
+      legacyNoSubidas.forEach(l=>dbsave('observaciones',l));
     }
+
+    // También añadir observaciones del localStorage que no estén en Supabase
+    const lo=lload('observaciones');
+    if(lo.length&&so){
+      const supaIds=new Set(so.map(o=>o.id||o.local_id).filter(Boolean));
+      const localExtra=lo.filter(o=>o.local_id&&!supaIds.has(o.local_id)&&!o.id);
+      if(localExtra.length){
+        obs=[...obs,...localExtra].sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp));
+        localExtra.forEach(l=>dbsave('observaciones',l));
+      }
+    }
+
     if(st&&st.length)tareas=st;
     if(sf)sf.forEach(f=>fichas[f.parcela_id]=f);
     if(fen&&fen.length)fenoLog=fen;
@@ -606,10 +622,15 @@ async function loadSupa(){
     if(na)notasAnuales=na;
     if(ng)notasGenerales=ng;
     if(ca)ca.forEach(r=>{if(!campanias[r.parcela_id])campanias[r.parcela_id]={};campanias[r.parcela_id][r.year]=r;});
+
     renderHist();renderFichas();renderPluvHist();
     if(mapInst)renderMapMarks();
+    if(curTab==='tareas')renderCal();
     await flushPend();
-  }catch(e){syncWarn('⚠️ Sin conexión — modo local');setTimeout(hideSync,3000);}
+    syncOK('☁️ '+obs.length+' obs cargadas');setTimeout(hideSync,2000);
+  }catch(e){
+    syncWarn('⚠️ Sin conexión — modo local');setTimeout(hideSync,3000);
+  }
 }
 
 // ── CONTRASEÑA ──
@@ -672,7 +693,7 @@ function toggleMic(t){
   if(grabando){recognition?.stop();grabando=false;document.getElementById('mic-'+t).classList.remove('rec');document.getElementById('mic-'+t).textContent='🎙';document.getElementById('mst-'+t).classList.remove('on');return;}
   recognition=new SR();recognition.lang='es-ES';recognition.continuous=true;recognition.interimResults=false;
   recognition.onstart=()=>{grabando=true;document.getElementById('mic-'+t).classList.add('rec');document.getElementById('mic-'+t).textContent='⏹';document.getElementById('mst-'+t).classList.add('on');};
-  recognition.onresult=e=>{const tx=Array.from(e.results).map(r=>r[0].transcript).join(' ');const ta=document.getElementById(t==='obs'?'nota-obs':'nota-tarea');ta.value=ta.value?ta.value+' '+tx:tx;};
+  recognition.onresult=e=>{const tx=Array.from(e.results).map(r=>r[0].transcript).join(' ');const taId=t==='obs'?'nota-obs':t==='cal'?'cal-nota':'nota-tarea';const ta=document.getElementById(taId);if(ta)ta.value=ta.value?ta.value+' '+tx:tx;};
   recognition.onend=()=>{grabando=false;document.getElementById('mic-'+t).classList.remove('rec');document.getElementById('mic-'+t).textContent='🎙';document.getElementById('mst-'+t).classList.remove('on');};
   recognition.onerror=()=>{grabando=false;document.getElementById('mic-'+t).classList.remove('rec');document.getElementById('mic-'+t).textContent='🎙';};
   recognition.start();
@@ -705,9 +726,9 @@ document.addEventListener('change',e=>{if(e.target.id==='gps-on')renderTipos();}
 
 // ── RENDER TAREAS ──
 function renderTareas(){
-  document.getElementById('tareas-grid').innerHTML=TAREAS_L.map(t=>'<button class="tlbtn'+(selTarea===t.id?' act':'')+'" onclick="selT(\''+t.id+'\')">'+t.icon+' '+t.label+'</button>').join('');
+  const el=document.getElementById('tareas-grid');if(el)el.innerHTML=TAREAS_L.map(t=>'<button class="tlbtn'+(selTarea===t.id?' act':''+'"')+' onclick="selT(\'+t.id+\')">'+'"'+t.icon+' '+t.label+'</button>').join("");
 }
-function selT(id){selTarea=selTarea===id?null:id;renderTareas();document.getElementById('tarea-extra').style.display=selTarea?'block':'none';if(selTarea){const t=TAREAS_L.find(x=>x.id===selTarea);document.getElementById('btn-tarea').textContent='✅ Registrar: '+t.label;}}
+function selT(id){selTarea=selTarea===id?null:id;renderTareas();const _ex=document.getElementById('tarea-extra');if(_ex)_ex.style.display=selTarea?'block':'none';if(selTarea){const t=TAREAS_L.find(x=>x.id===selTarea);const _bt=document.getElementById('btn-tarea');if(_bt)_bt.textContent='✅ Registrar: '+t.label;}}
 
 // ── RENDER FENOS ──
 function renderFenos(){
@@ -728,15 +749,11 @@ async function saveObs(){
   await dbsave('observaciones',r);
 }
 
-// ── SAVE TAREA ──
+// ── SAVE TAREA (legacy - kept for compatibility) ──
 async function saveTarea(){
-  if(!selTarea||!parcela){document.getElementById('w-tarea').style.display='block';return;}
-  document.getElementById('w-tarea').style.display='none';
-  const r={timestamp:new Date().toISOString(),parcela_id:parcela,tarea:selTarea,detalle:document.getElementById('nota-tarea').value.trim(),lat:gps?.lat||null,lng:gps?.lng||null,acc:gps?.acc||null,usuario:user,usuario_color:userColor};
-  tareas.unshift(r);selTarea=null;document.getElementById('nota-tarea').value='';
-  document.getElementById('tarea-extra').style.display='none';renderTareas();
-  const btn=document.getElementById('btn-tarea');btn.classList.add('ok');btn.textContent='✓ Registrado';
-  setTimeout(()=>btn.classList.remove('ok'),1500);
+  if(!selTarea||!parcela)return;
+  const r={timestamp:new Date().toISOString(),parcela_id:parcela,tarea:selTarea,detalle:(document.getElementById('nota-tarea')?.value||'').trim(),lat:gps?.lat||null,lng:gps?.lng||null,acc:gps?.acc||null,usuario:user,usuario_color:userColor};
+  tareas.unshift(r);selTarea=null;
   renderHist();await dbsave('tareas',r);
 }
 
@@ -1226,33 +1243,96 @@ function renderCal(){
     const dayEvs=evs[calDia]||[];
     const dd=new Date(calDia+'T12:00:00');
     const lbl=dd.toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'});
-    let det='<div class="card"><div style="font-size:13px;font-weight:600;margin-bottom:10px;text-transform:capitalize">'+lbl+'</div>';
-    if(!dayEvs.length)det+='<div style="font-size:11px;color:#ccc;font-family:var(--mono)">Sin actividad</div>';
-    else det+=dayEvs.map(e=>'<div style="display:flex;align-items:flex-start;gap:8px;padding:5px 0;border-bottom:1px solid var(--cd)"><div style="width:7px;height:7px;border-radius:50%;background:'+e.color+';flex-shrink:0;margin-top:4px"></div><div><div style="font-size:11px;font-family:var(--mono);font-weight:600">'+e.txt+'</div>'+(e.cal?'<div style="font-size:9px;color:var(--tl)">'+e.cal+'</div>':'')+(e.nota?'<div style="font-size:10px;color:var(--tl);font-style:italic">'+e.nota+'</div>':'')+'</div></div>').join('');
-    det+='</div>';
-    document.getElementById('cal-detalle').innerHTML=det;
-    document.getElementById('cal-nueva').style.display='block';
-    document.getElementById('cal-fecha').value=calDia;
+    document.getElementById('cal-dia-titulo').textContent=lbl;
+    // Eventos del día con botón borrar para tareas hechas y previstas
+    let evHtml='';
+    if(!dayEvs.length) evHtml='<div style="font-size:11px;color:#ccc;font-family:var(--mono)">Sin actividad registrada</div>';
+    else evHtml=dayEvs.map((e,i)=>{
+      const canDel=e.tipo==='hecha'||e.tipo==='prevista';
+      return '<div style="display:flex;align-items:flex-start;gap:8px;padding:5px 0;border-bottom:1px solid var(--cd)">'+
+        '<div style="width:7px;height:7px;border-radius:50%;background:'+e.color+';flex-shrink:0;margin-top:4px"></div>'+
+        '<div style="flex:1"><div style="font-size:11px;font-family:var(--mono);font-weight:600">'+e.txt+'</div>'+
+        (e.nota?'<div style="font-size:10px;color:var(--tl);font-style:italic">'+e.nota+'</div>':'')+
+        '</div>'+
+        (canDel?'<button onclick="borrarTarea(\''+calDia+'\','+i+',\''+e.tipo+'\')" style="padding:2px 7px;border-radius:5px;border:none;background:#FEF0F0;color:#C0392B;font-size:10px;cursor:pointer;font-family:var(--mono);flex-shrink:0">🗑</button>':'')+
+      '</div>';
+    }).join('');
+    document.getElementById('cal-dia-eventos').innerHTML=evHtml;
+    document.getElementById('cal-dia-wrap').style.display='block';
+    document.getElementById('cal-hint').style.display='none';
   } else {
-    document.getElementById('cal-detalle').innerHTML='<div style="text-align:center;font-size:11px;color:#ccc;font-family:var(--mono);padding:12px 0">Pulsa un día para ver detalle</div>';
-    document.getElementById('cal-nueva').style.display='none';
+    document.getElementById('cal-dia-wrap').style.display='none';
+    document.getElementById('cal-hint').style.display='block';
   }
 }
 
-function selDia(f){calDia=calDia===f?null:f;renderCal();}
+let tipoFechaActual='hecha';
+function selDia(f){calDia=f===calDia?null:f;renderCal();}
 
-async function guardarTareaCalendario(){
-  const fecha=document.getElementById('cal-fecha').value;
-  const tipo=document.getElementById('cal-tipo').value;
+function setTipoFecha(tipo){
+  tipoFechaActual=tipo;
+  const bh=document.getElementById('btn-tipo-hecha');
+  const bp=document.getElementById('btn-tipo-prev');
+  if(tipo==='hecha'){
+    bh.style.border='2px solid #27AE60';bh.style.background='#F0FBF0';bh.style.color='#27AE60';bh.style.fontWeight='700';
+    bp.style.border='1.5px solid var(--cd)';bp.style.background='#fff';bp.style.color='#888';bp.style.fontWeight='400';
+    document.getElementById('btn-cal-save').textContent='✅ Guardar tarea hecha';
+  } else {
+    bp.style.border='2px solid var(--oro)';bp.style.background='#FDF8ED';bp.style.color='var(--oro)';bp.style.fontWeight='700';
+    bh.style.border='1.5px solid var(--cd)';bh.style.background='#fff';bh.style.color='#888';bh.style.fontWeight='400';
+    document.getElementById('btn-cal-save').textContent='📅 Guardar tarea prevista';
+  }
+}
+
+async function guardarTareaUnificada(){
+  if(!calDia)return;
+  const tipoId=document.getElementById('cal-tipo').value;
   const pid=document.getElementById('cal-parcela').value;
   const nota=document.getElementById('cal-nota').value.trim();
-  if(!fecha)return;
-  const t={fecha,tipo,parcela:pid,nota,usuario:user,ts:Date.now()};
-  tareasPrevistas.push(t);
-  document.getElementById('cal-nota').value='';
-  renderCal();
-  syncOK('📅 Tarea prevista guardada');setTimeout(hideSync,1500);
-  await dbsave('gcal_pending',{titulo:'📅 '+tipo+(pid?' · '+(PMAP[pid]?.nombre||''):''),fecha,descripcion:nota||tipo,prevista:true,usuario:user,timestamp:new Date().toISOString()});
+  const ta=TAREAS_L.find(t=>t.id===tipoId)||{label:tipoId,icon:'✅'};
+  const p=PMAP[pid];
+
+  if(tipoFechaActual==='hecha'){
+    // Guardar como tarea hecha en Supabase
+    const r={timestamp:calDia+'T12:00:00.000Z',parcela_id:pid||null,tarea:tipoId,detalle:nota,lat:null,lng:null,acc:null,usuario:user,usuario_color:userColor};
+    tareas.unshift(r);
+    document.getElementById('cal-nota').value='';
+    renderCal();renderHist();
+    syncOK('✅ Tarea guardada');setTimeout(hideSync,1500);
+    await dbsave('tareas',r);
+  } else {
+    // Guardar como prevista
+    const t={fecha:calDia,tipo:ta.label,parcela:pid,nota,usuario:user,ts:Date.now()};
+    tareasPrevistas.push(t);
+    document.getElementById('cal-nota').value='';
+    renderCal();
+    syncOK('📅 Tarea prevista guardada');setTimeout(hideSync,1500);
+    await dbsave('gcal_pending',{titulo:'📅 '+ta.label+(p?' · '+p.nombre:''),fecha:calDia,descripcion:nota||ta.label,prevista:true,usuario:user,timestamp:new Date().toISOString()});
+  }
+}
+
+async function borrarTarea(fecha,idx,tipo){
+  if(!confirm('¿Borrar esta tarea?'))return;
+  if(tipo==='hecha'){
+    // Buscar la tarea en el array por fecha
+    const fi=tareas.findIndex(t=>t.timestamp.startsWith(fecha));
+    if(fi>=0){
+      if(tareas[fi].id)await db.from('tareas').delete().eq('id',tareas[fi].id);
+      tareas.splice(fi,1);
+    }
+  } else {
+    // Borrar prevista
+    const fi=tareasPrevistas.findIndex(t=>t.fecha===fecha);
+    if(fi>=0){
+      if(tareasPrevistas[fi].id||tareasPrevistas[fi].ts){
+        const tid=tareasPrevistas[fi].id||tareasPrevistas[fi].ts;
+        if(tareasPrevistas[fi].id)await db.from('gcal_pending').delete().eq('id',tareasPrevistas[fi].id);
+      }
+      tareasPrevistas.splice(fi,1);
+    }
+  }
+  renderCal();renderHist();
+  syncOK('✓ Borrado');setTimeout(hideSync,1200);
 }
 
 // ── TABS ──
