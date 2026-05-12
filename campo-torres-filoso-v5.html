@@ -554,24 +554,48 @@ async function flushPend(){try{const q=JSON.parse(localStorage.getItem('tf_pend'
 
 // ── SUPABASE ──
 async function dbsave(t,r){
+  // Red de seguridad: guardar en localStorage con clave separada para obs/tareas
   const rr={...r,local_id:r.local_id||Date.now()};
-  lsave(t,rr);syncOK('💾 Guardado');
-  try{const{error}=await db.from(t).insert(r);if(error)throw error;syncOK('☁️ Sincronizado');setTimeout(hideSync,1500);}
-  catch(e){qpend(t,r);syncWarn('⚠️ Sin red — guardado localmente');setTimeout(hideSync,3000);}
+  if(t==='observaciones'||t==='tareas'){
+    try{
+      const k='tf_safe_'+t;
+      const a=JSON.parse(localStorage.getItem(k)||'[]');
+      if(!a.some(x=>x.local_id===rr.local_id)){a.unshift(rr);localStorage.setItem(k,JSON.stringify(a.slice(0,500)));}
+    }catch(e){}
+  }
+  syncOK('💾 Guardando...');
+  try{
+    const{error}=await db.from(t).insert(r);
+    if(error)throw error;
+    syncOK('☁️ Guardado');setTimeout(hideSync,1500);
+    return true;
+  }catch(e){
+    qpend(t,r);
+    syncWarn('⚠️ Sin red — guardado en móvil');setTimeout(hideSync,3000);
+    return false;
+  }
 }
 async function dbupsert(t,r,c){
-  lsave(t,r);
   try{const{error}=await db.from(t).upsert(r,{onConflict:c});if(error)throw error;syncOK('✓ Guardado');setTimeout(hideSync,1500);}
   catch(e){syncWarn('⚠️ Sin red');setTimeout(hideSync,2500);}
 }
 async function dbdel(t,id){try{await db.from(t).delete().eq('id',id);syncOK('✓ Borrado');setTimeout(hideSync,1200);}catch(e){syncWarn('⚠️ Error');setTimeout(hideSync,2000);}}
-
 function syncOK(m){const b=document.getElementById('sync');b.textContent=m;b.style.background='#27AE60';b.classList.add('on');}
 function syncWarn(m){const b=document.getElementById('sync');b.textContent=m;b.style.background='#C0392B';b.classList.add('on');}
 function hideSync(){document.getElementById('sync').classList.remove('on');}
 
 async function loadSupa(){
-  obs=[...LEGACY];renderHist();
+  // Fase 1: mostrar localStorage de seguridad mientras carga Supabase
+  try{
+    const safeObs=JSON.parse(localStorage.getItem('tf_safe_observaciones')||'[]');
+    if(safeObs.length>0){
+      const legacyFiltered=LEGACY.filter(l=>!safeObs.some(o=>o.legacy_id===l.legacy_id));
+      obs=[...safeObs,...legacyFiltered].sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp));
+    }else{obs=[...LEGACY];}
+  }catch(e){obs=[...LEGACY];}
+  renderHist();
+
+  // Fase 2: Supabase REEMPLAZA — sin merge, sin duplicados
   try{
     const[r1,r2,r3,r4,r5,r6,r7,r8,r9]=await Promise.all([
       db.from('observaciones').select('*').order('timestamp',{ascending:false}).limit(1000),
@@ -585,10 +609,24 @@ async function loadSupa(){
       db.from('campanias').select('*'),
     ]);
     const so=r1.data||[];
+    // Legacy que no están en Supabase aún
     const supaLegacyIds=new Set(so.map(o=>o.legacy_id).filter(Boolean));
     const legacyExtra=LEGACY.filter(l=>!supaLegacyIds.has(l.legacy_id));
     obs=[...so,...legacyExtra].sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp));
     if(legacyExtra.length)legacyExtra.forEach(l=>dbsave('observaciones',l));
+    // Actualizar localStorage de seguridad con datos frescos de Supabase
+    try{localStorage.setItem('tf_safe_observaciones',JSON.stringify(so.slice(0,500)));}catch(e){}
+    // Subir obs del safe que no llegaron a Supabase
+    const safeObs=JSON.parse(localStorage.getItem('tf_safe_observaciones')||'[]');
+    const supaIds=new Set(so.map(o=>o.local_id).filter(Boolean));
+    const pendSafe=safeObs.filter(o=>o.local_id&&!supaIds.has(o.local_id)&&!o.id);
+    if(pendSafe.length){
+      syncOK('⬆️ Subiendo '+pendSafe.length+' obs...');
+      for(const p of pendSafe){
+        const{error}=await db.from('observaciones').insert(p).catch(e=>({error:e}));
+      }
+    }
+    await flushPend();
     const st=r2.data||[];if(st.length)tareas=st;
     const sf=r3.data||[];sf.forEach(f=>{if(f.parcela_id)fichas[f.parcela_id]=f;});
     const fen=r4.data||[];if(fen.length)fenoLog=fen;
@@ -607,13 +645,10 @@ async function loadSupa(){
     renderHist();renderFichas();renderPluvHist();
     if(mapInst)renderMapMarks();
     if(curTab==='tareas')renderCal();
-    await flushPend();
-    syncOK('☁️ '+obs.length+' observaciones cargadas');
-    setTimeout(hideSync,3000);
+    syncOK('☁️ '+obs.length+' observaciones');setTimeout(hideSync,3000);
   }catch(e){
     console.error('Supabase error:',e);
-    syncWarn('⚠️ Sin conexión — datos locales');
-    setTimeout(hideSync,4000);
+    syncWarn('⚠️ Sin conexión — datos locales');setTimeout(hideSync,4000);
   }
 }
 
