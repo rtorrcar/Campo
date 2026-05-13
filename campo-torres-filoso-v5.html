@@ -554,15 +554,6 @@ async function flushPend(){try{const q=JSON.parse(localStorage.getItem('tf_pend'
 
 // ── SUPABASE ──
 async function dbsave(t,r){
-  // Red de seguridad: guardar en localStorage con clave separada para obs/tareas
-  const rr={...r,local_id:r.local_id||Date.now()};
-  if(t==='observaciones'||t==='tareas'){
-    try{
-      const k='tf_safe_'+t;
-      const a=JSON.parse(localStorage.getItem(k)||'[]');
-      if(!a.some(x=>x.local_id===rr.local_id)){a.unshift(rr);localStorage.setItem(k,JSON.stringify(a.slice(0,500)));}
-    }catch(e){}
-  }
   syncOK('💾 Guardando...');
   try{
     const{error}=await db.from(t).insert(r);
@@ -570,8 +561,9 @@ async function dbsave(t,r){
     syncOK('☁️ Guardado');setTimeout(hideSync,1500);
     return true;
   }catch(e){
+    // Sin red: guardar en cola para subir cuando haya conexión
     qpend(t,r);
-    syncWarn('⚠️ Sin red — guardado en móvil');setTimeout(hideSync,3000);
+    syncWarn('⚠️ Sin red — se subirá al reconectar');setTimeout(hideSync,3000);
     return false;
   }
 }
@@ -585,18 +577,10 @@ function syncWarn(m){const b=document.getElementById('sync');b.textContent=m;b.s
 function hideSync(){document.getElementById('sync').classList.remove('on');}
 
 async function loadSupa(){
-  // Fase 1: mostrar localStorage de seguridad mientras carga Supabase
+  // Mostrar legacy mientras carga
+  obs=[...LEGACY];renderHist();
   try{
-    const safeObs=JSON.parse(localStorage.getItem('tf_safe_observaciones')||'[]');
-    if(safeObs.length>0){
-      const legacyFiltered=LEGACY.filter(l=>!safeObs.some(o=>o.legacy_id===l.legacy_id));
-      obs=[...safeObs,...legacyFiltered].sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp));
-    }else{obs=[...LEGACY];}
-  }catch(e){obs=[...LEGACY];}
-  renderHist();
-
-  // Fase 2: Supabase REEMPLAZA — sin merge, sin duplicados
-  try{
+    // Cargar todo de Supabase en paralelo
     const[r1,r2,r3,r4,r5,r6,r7,r8,r9]=await Promise.all([
       db.from('observaciones').select('*').order('timestamp',{ascending:false}).limit(1000),
       db.from('tareas').select('*').order('timestamp',{ascending:false}).limit(500),
@@ -608,25 +592,15 @@ async function loadSupa(){
       db.from('notas_generales').select('*').order('timestamp',{ascending:false}),
       db.from('campanias').select('*'),
     ]);
+    // OBSERVACIONES: Supabase reemplaza todo. Sin merge.
     const so=r1.data||[];
-    // Legacy que no están en Supabase aún
     const supaLegacyIds=new Set(so.map(o=>o.legacy_id).filter(Boolean));
     const legacyExtra=LEGACY.filter(l=>!supaLegacyIds.has(l.legacy_id));
     obs=[...so,...legacyExtra].sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp));
     if(legacyExtra.length)legacyExtra.forEach(l=>dbsave('observaciones',l));
-    // Actualizar localStorage de seguridad con datos frescos de Supabase
-    try{localStorage.setItem('tf_safe_observaciones',JSON.stringify(so.slice(0,500)));}catch(e){}
-    // Subir obs del safe que no llegaron a Supabase
-    const safeObs=JSON.parse(localStorage.getItem('tf_safe_observaciones')||'[]');
-    const supaIds=new Set(so.map(o=>o.local_id).filter(Boolean));
-    const pendSafe=safeObs.filter(o=>o.local_id&&!supaIds.has(o.local_id)&&!o.id);
-    if(pendSafe.length){
-      syncOK('⬆️ Subiendo '+pendSafe.length+' obs...');
-      for(const p of pendSafe){
-        const{error}=await db.from('observaciones').insert(p).catch(e=>({error:e}));
-      }
-    }
+    // Subir cola de pendientes (guardados sin red)
     await flushPend();
+    // Resto de tablas
     const st=r2.data||[];if(st.length)tareas=st;
     const sf=r3.data||[];sf.forEach(f=>{if(f.parcela_id)fichas[f.parcela_id]=f;});
     const fen=r4.data||[];if(fen.length)fenoLog=fen;
@@ -645,12 +619,13 @@ async function loadSupa(){
     renderHist();renderFichas();renderPluvHist();
     if(mapInst)renderMapMarks();
     if(curTab==='tareas')renderCal();
-    syncOK('☁️ '+obs.length+' observaciones');setTimeout(hideSync,3000);
+    syncOK('☁️ '+obs.length+' observaciones cargadas');setTimeout(hideSync,3000);
   }catch(e){
-    console.error('Supabase error:',e);
-    syncWarn('⚠️ Sin conexión — datos locales');setTimeout(hideSync,4000);
+    console.error('loadSupa error:',e);
+    syncWarn('⚠️ Sin conexión — solo datos locales');setTimeout(hideSync,4000);
   }
 }
+
 
 // ── CONTRASEÑA ──
 const PASSWORDS={'Rocío':'viña2026','Esperanza':'viña2026','Trabajador':'campo2026','Invitado':'campo2026'};
