@@ -523,15 +523,8 @@ const FENOLOGIA=[
   {id:'vendimia', label:'Vendimia',  icon:'🧺'},
 ];
 
-const LEGACY=[
-  {legacy_id:1777136578542,timestamp:'2026-04-25T17:02:58.542Z',parcela_id:'ms',tipo:'racimos',nota:'22\n15\n19\n17\n14\nMoscatel?',lat:39.2792236,lng:-2.4581962,acc:3,usuario:'Rocío',usuario_color:'#8B2635'},
-  {legacy_id:1777136299966,timestamp:'2026-04-25T16:58:19.966Z',parcela_id:'ms',tipo:'cepa_muerta',nota:'5 faltas cerca de los pinos',lat:39.2792047,lng:-2.4582824,acc:3,usuario:'Rocío',usuario_color:'#8B2635'},
-  {legacy_id:1777136231794,timestamp:'2026-04-25T16:57:11.794Z',parcela_id:'ms',tipo:'racimos',nota:'8 rac línea pinos\n13\n21\n17\n24',lat:39.279077,lng:-2.4583319,acc:3,usuario:'Rocío',usuario_color:'#8B2635'},
-  {legacy_id:1777135485695,timestamp:'2026-04-25T16:44:45.695Z',parcela_id:'ms',tipo:'racimos',nota:'7 rac 3ª\n12 4ª\n15 5ª\n20 6ª\n17 7ª\n22 8ª\n21 9ª',lat:39.2791188,lng:-2.458429,acc:4,usuario:'Rocío',usuario_color:'#8B2635'},
-  {legacy_id:1777135118585,timestamp:'2026-04-25T16:38:38.542Z',parcela_id:null,tipo:'nota_libre',nota:'Ácaros?',lat:39.27908,lng:-2.4585039,acc:4,usuario:'Rocío',usuario_color:'#8B2635'},
-  {legacy_id:1777135081248,timestamp:'2026-04-25T16:38:01.248Z',parcela_id:'ms',tipo:'racimos',nota:'20 racimos 1ª cepa mosc\n30 rac 2ª',lat:39.2790922,lng:-2.4585014,acc:4,usuario:'Rocío',usuario_color:'#8B2635'},
-  {legacy_id:1777131970869,timestamp:'2026-04-25T15:46:10.869Z',parcela_id:'tv',tipo:'clorosis',nota:'clorosis zona carretera',lat:39.2788609,lng:-2.4585814,acc:3,usuario:'Rocío',usuario_color:'#8B2635'},
-];
+// Observaciones del primer día ya están en Supabase con legacy_id
+const LEGACY=[];
 
 // STATE
 let user=null,userColor=null,parcela=null,tipoObs=null,selTarea=null,selFeno=null;
