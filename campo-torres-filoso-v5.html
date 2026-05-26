@@ -587,6 +587,9 @@ async function loadSupa(){
     ]);
     // OBSERVACIONES: Supabase reemplaza todo. Sin merge.
     const so=r1.data||[];
+    // DEBUG: mostrar resultado en pantalla
+    syncOK('🔍 Supabase devolvió: '+so.length+' obs (error: '+(r1.error?.message||'ninguno')+')');
+    setTimeout(hideSync,8000);
     const supaLegacyIds=new Set(so.map(o=>o.legacy_id).filter(Boolean));
     const legacyExtra=LEGACY.filter(l=>!supaLegacyIds.has(l.legacy_id));
     obs=[...so,...legacyExtra].sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp));
