@@ -465,36 +465,53 @@ button:active{transform:scale(.97)}
 const SURL='https://owqvnouzsreezefmsmyq.supabase.co';
 const SKEY='sb_publishable_5LzT7kq4R-HjVGqeCd0PNQ_l4wtpfxn';
 
-// API REST directa — sin cliente, sin sesión, sin cookies que se corrompan
 async function sbSelect(table, params=''){
-  const r=await fetch(SURL+'/rest/v1/'+table+'?'+params,{
-    headers:{'apikey':SKEY,'Authorization':'Bearer '+SKEY,'Content-Type':'application/json'}
+  const url=SURL+'/rest/v1/'+table+(params?'?'+params:'');
+  const r=await fetch(url,{
+    headers:{
+      'apikey':SKEY,
+      'Authorization':'Bearer '+SKEY,
+      'Accept':'application/json',
+      'Content-Type':'application/json'
+    }
   });
-  if(!r.ok)throw new Error(table+': '+r.status);
+  if(!r.ok){const t=await r.text();throw new Error(table+': '+r.status+' '+t.substring(0,100));}
   return r.json();
 }
 async function sbInsert(table, data){
   const r=await fetch(SURL+'/rest/v1/'+table,{
     method:'POST',
-    headers:{'apikey':SKEY,'Authorization':'Bearer '+SKEY,'Content-Type':'application/json','Prefer':'return=minimal'},
+    headers:{
+      'apikey':SKEY,
+      'Authorization':'Bearer '+SKEY,
+      'Content-Type':'application/json',
+      'Accept':'application/json',
+      'Prefer':'return=minimal'
+    },
     body:JSON.stringify(data)
   });
-  if(!r.ok){const t=await r.text();throw new Error(table+': '+t);}
+  if(!r.ok){const t=await r.text();throw new Error(table+' insert: '+r.status+' '+t.substring(0,100));}
   return true;
 }
 async function sbUpsert(table, data, onConflict){
   const r=await fetch(SURL+'/rest/v1/'+table+'?on_conflict='+onConflict,{
     method:'POST',
-    headers:{'apikey':SKEY,'Authorization':'Bearer '+SKEY,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=minimal'},
+    headers:{
+      'apikey':SKEY,
+      'Authorization':'Bearer '+SKEY,
+      'Content-Type':'application/json',
+      'Accept':'application/json',
+      'Prefer':'resolution=merge-duplicates,return=minimal'
+    },
     body:JSON.stringify(data)
   });
-  if(!r.ok){const t=await r.text();throw new Error(table+': '+t);}
+  if(!r.ok){const t=await r.text();throw new Error(table+' upsert: '+t.substring(0,100));}
   return true;
 }
 async function sbDelete(table, id){
   const r=await fetch(SURL+'/rest/v1/'+table+'?id=eq.'+id,{
     method:'DELETE',
-    headers:{'apikey':SKEY,'Authorization':'Bearer '+SKEY}
+    headers:{'apikey':SKEY,'Authorization':'Bearer '+SKEY,'Accept':'application/json'}
   });
   if(!r.ok)throw new Error(table+' delete: '+r.status);
   return true;
@@ -502,7 +519,13 @@ async function sbDelete(table, id){
 async function sbUpdate(table, id, data){
   const r=await fetch(SURL+'/rest/v1/'+table+'?id=eq.'+id,{
     method:'PATCH',
-    headers:{'apikey':SKEY,'Authorization':'Bearer '+SKEY,'Content-Type':'application/json','Prefer':'return=minimal'},
+    headers:{
+      'apikey':SKEY,
+      'Authorization':'Bearer '+SKEY,
+      'Content-Type':'application/json',
+      'Accept':'application/json',
+      'Prefer':'return=minimal'
+    },
     body:JSON.stringify(data)
   });
   if(!r.ok)throw new Error(table+' update: '+r.status);
