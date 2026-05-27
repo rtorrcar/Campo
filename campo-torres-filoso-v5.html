@@ -464,7 +464,50 @@ button:active{transform:scale(.97)}
 <script>
 const SURL='https://owqvnouzsreezefmsmyq.supabase.co';
 const SKEY='sb_publishable_5LzT7kq4R-HjVGqeCd0PNQ_l4wtpfxn';
-const db=supabase.createClient(SURL,SKEY);
+
+// API REST directa — sin cliente, sin sesión, sin cookies que se corrompan
+async function sbSelect(table, params=''){
+  const r=await fetch(SURL+'/rest/v1/'+table+'?'+params,{
+    headers:{'apikey':SKEY,'Authorization':'Bearer '+SKEY,'Content-Type':'application/json'}
+  });
+  if(!r.ok)throw new Error(table+': '+r.status);
+  return r.json();
+}
+async function sbInsert(table, data){
+  const r=await fetch(SURL+'/rest/v1/'+table,{
+    method:'POST',
+    headers:{'apikey':SKEY,'Authorization':'Bearer '+SKEY,'Content-Type':'application/json','Prefer':'return=minimal'},
+    body:JSON.stringify(data)
+  });
+  if(!r.ok){const t=await r.text();throw new Error(table+': '+t);}
+  return true;
+}
+async function sbUpsert(table, data, onConflict){
+  const r=await fetch(SURL+'/rest/v1/'+table+'?on_conflict='+onConflict,{
+    method:'POST',
+    headers:{'apikey':SKEY,'Authorization':'Bearer '+SKEY,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=minimal'},
+    body:JSON.stringify(data)
+  });
+  if(!r.ok){const t=await r.text();throw new Error(table+': '+t);}
+  return true;
+}
+async function sbDelete(table, id){
+  const r=await fetch(SURL+'/rest/v1/'+table+'?id=eq.'+id,{
+    method:'DELETE',
+    headers:{'apikey':SKEY,'Authorization':'Bearer '+SKEY}
+  });
+  if(!r.ok)throw new Error(table+' delete: '+r.status);
+  return true;
+}
+async function sbUpdate(table, id, data){
+  const r=await fetch(SURL+'/rest/v1/'+table+'?id=eq.'+id,{
+    method:'PATCH',
+    headers:{'apikey':SKEY,'Authorization':'Bearer '+SKEY,'Content-Type':'application/json','Prefer':'return=minimal'},
+    body:JSON.stringify(data)
+  });
+  if(!r.ok)throw new Error(table+' update: '+r.status);
+  return true;
+}
 const LAT=39.2793,LNG=-2.4583;
 
 const PARCELAS=[
@@ -543,82 +586,72 @@ function lload(t){try{return JSON.parse(localStorage.getItem('tf_'+t)||'[]');}ca
 function ldel(t,fn){try{const a=JSON.parse(localStorage.getItem('tf_'+t)||'[]');localStorage.setItem('tf_'+t,JSON.stringify(a.filter(r=>!fn(r))));}catch(e){}}
 function lupd(t,fn,upd){try{const a=JSON.parse(localStorage.getItem('tf_'+t)||'[]');const i=a.findIndex(fn);if(i>=0){a[i]=upd(a[i]);localStorage.setItem('tf_'+t,JSON.stringify(a));}}catch(e){}}
 function qpend(t,r){try{const q=JSON.parse(localStorage.getItem('tf_pend')||'[]');q.push({t,r});localStorage.setItem('tf_pend',JSON.stringify(q));}catch(e){}}
-async function flushPend(){try{const q=JSON.parse(localStorage.getItem('tf_pend')||'[]');if(!q.length)return;const rem=[];for(const x of q){try{const{error}=await db.from(x.t).insert(x.r);if(error)rem.push(x);}catch(e){rem.push(x);}}localStorage.setItem('tf_pend',JSON.stringify(rem));if(rem.length<q.length)syncOK('✓ '+( q.length-rem.length)+' obs subidas');}catch(e){}}
+async function flushPend(){try{const q=JSON.parse(localStorage.getItem('tf_pend')||'[]');if(!q.length)return;const rem=[];for(const x of q){try{await sbInsert(x.t,x.r);}catch(e){rem.push(x);}}localStorage.setItem('tf_pend',JSON.stringify(rem));if(rem.length<q.length)syncOK('✓ '+( q.length-rem.length)+' obs subidas');}catch(e){}}
 
 // ── SUPABASE ──
 async function dbsave(t,r){
   syncOK('💾 Guardando...');
   try{
-    const{error}=await db.from(t).insert(r);
-    if(error)throw error;
+    await sbInsert(t,r);
     syncOK('☁️ Guardado');setTimeout(hideSync,1500);
     return true;
   }catch(e){
-    // Sin red: guardar en cola para subir cuando haya conexión
     qpend(t,r);
     syncWarn('⚠️ Sin red — se subirá al reconectar');setTimeout(hideSync,3000);
     return false;
   }
 }
 async function dbupsert(t,r,c){
-  try{const{error}=await db.from(t).upsert(r,{onConflict:c});if(error)throw error;syncOK('✓ Guardado');setTimeout(hideSync,1500);}
+  try{await sbUpsert(t,r,c);syncOK('✓ Guardado');setTimeout(hideSync,1500);}
   catch(e){syncWarn('⚠️ Sin red');setTimeout(hideSync,2500);}
 }
-async function dbdel(t,id){try{await db.from(t).delete().eq('id',id);syncOK('✓ Borrado');setTimeout(hideSync,1200);}catch(e){syncWarn('⚠️ Error');setTimeout(hideSync,2000);}}
+async function dbdel(t,id){
+  try{await sbDelete(t,id);syncOK('✓ Borrado');setTimeout(hideSync,1200);}
+  catch(e){syncWarn('⚠️ Error');setTimeout(hideSync,2000);}
+}
 function syncOK(m){const b=document.getElementById('sync');b.textContent=m;b.style.background='#27AE60';b.classList.add('on');}
 function syncWarn(m){const b=document.getElementById('sync');b.textContent=m;b.style.background='#C0392B';b.classList.add('on');}
 function hideSync(){document.getElementById('sync').classList.remove('on');}
 
 async function loadSupa(){
-  // Mostrar legacy mientras carga
-  obs=[...LEGACY];renderHist();
+  obs=[];renderHist();
   try{
-    // Cargar todo de Supabase en paralelo
-    const[r1,r2,r3,r4,r5,r6,r7,r8,r9]=await Promise.all([
-      db.from('observaciones').select('*').order('timestamp',{ascending:false}).limit(1000),
-      db.from('tareas').select('*').order('timestamp',{ascending:false}).limit(500),
-      db.from('fichas').select('*'),
-      db.from('fenologia').select('*').order('timestamp',{ascending:false}).limit(500),
-      db.from('pluvio').select('*').order('fecha',{ascending:false}).limit(200),
-      db.from('gcal_pending').select('*').order('fecha',{ascending:false}).limit(200),
-      db.from('notas_anuales').select('*').order('timestamp',{ascending:false}),
-      db.from('notas_generales').select('*').order('timestamp',{ascending:false}),
-      db.from('campanias').select('*'),
+    // Observaciones primero
+    const so=await sbSelect('observaciones','order=timestamp.desc&limit=1000');
+    obs=so.sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp));
+    renderHist();
+    syncOK('☁️ '+obs.length+' observaciones');setTimeout(hideSync,2000);
+    // Resto en paralelo
+    const[st,sf,fen,plu,prev,na,ng,ca]=await Promise.all([
+      sbSelect('tareas','order=timestamp.desc&limit=500'),
+      sbSelect('fichas',''),
+      sbSelect('fenologia','order=timestamp.desc&limit=500'),
+      sbSelect('pluvio','order=fecha.desc&limit=200'),
+      sbSelect('gcal_pending','order=fecha.desc&limit=200'),
+      sbSelect('notas_anuales','order=timestamp.desc'),
+      sbSelect('notas_generales','order=timestamp.desc'),
+      sbSelect('campanias',''),
     ]);
-    // OBSERVACIONES: Supabase reemplaza todo. Sin merge.
-    const so=r1.data||[];
-    // DEBUG: mostrar resultado en pantalla
-    syncOK('🔍 Supabase devolvió: '+so.length+' obs (error: '+(r1.error?.message||'ninguno')+')');
-    setTimeout(hideSync,8000);
-    const supaLegacyIds=new Set(so.map(o=>o.legacy_id).filter(Boolean));
-    const legacyExtra=LEGACY.filter(l=>!supaLegacyIds.has(l.legacy_id));
-    obs=[...so,...legacyExtra].sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp));
-    if(legacyExtra.length)legacyExtra.forEach(l=>dbsave('observaciones',l));
-    // Subir cola de pendientes (guardados sin red)
-    await flushPend();
-    // Resto de tablas
-    const st=r2.data||[];if(st.length)tareas=st;
-    const sf=r3.data||[];sf.forEach(f=>{if(f.parcela_id)fichas[f.parcela_id]=f;});
-    const fen=r4.data||[];if(fen.length)fenoLog=fen;
-    const plu=r5.data||[];if(plu.length)pluvioLog=plu;
-    const prev=r6.data||[];
+    if(st.length)tareas=st;
+    sf.forEach(f=>{if(f.parcela_id)fichas[f.parcela_id]=f;});
+    if(fen.length)fenoLog=fen;
+    if(plu.length)pluvioLog=plu;
     if(prev.length)tareasPrevistas=prev.filter(r=>r.prevista).map(r=>({
       fecha:r.fecha,tipo:(r.titulo||'').replace('📅 ','').split(' · ')[0],
       parcela:'',nota:r.descripcion||'',usuario:r.usuario,ts:r.id
     }));
-    const na=r7.data||[];if(na.length)notasAnuales=na;
-    const ng=r8.data||[];if(ng.length)notasGenerales=ng;
-    const ca=r9.data||[];ca.forEach(r=>{
+    if(na.length)notasAnuales=na;
+    if(ng.length)notasGenerales=ng;
+    ca.forEach(r=>{
       if(!campanias[r.parcela_id])campanias[r.parcela_id]={};
       campanias[r.parcela_id][r.year]=r;
     });
+    await flushPend();
     renderHist();renderFichas();renderPluvHist();
     if(mapInst)renderMapMarks();
     if(curTab==='tareas')renderCal();
-    syncOK('☁️ '+obs.length+' observaciones cargadas');setTimeout(hideSync,3000);
   }catch(e){
-    console.error('loadSupa error:',e);
-    syncWarn('⚠️ Sin conexión — solo datos locales');setTimeout(hideSync,4000);
+    syncWarn('⚠️ Error: '+e.message);setTimeout(hideSync,6000);
   }
 }
 
@@ -852,7 +885,7 @@ async function doEdit(){
   obs[idx].parcela_id=document.getElementById('e-parc').value||null;
   obs[idx].tipo=document.getElementById('e-tipo').value;
   obs[idx].nota=document.getElementById('e-nota').value;
-  if(obs[idx].id)await db.from('observaciones').update({parcela_id:obs[idx].parcela_id,tipo:obs[idx].tipo,nota:obs[idx].nota}).eq('id',obs[idx].id);
+  if(obs[idx].id)await sbUpdate('observaciones',obs[idx].id,{parcela_id:obs[idx].parcela_id,tipo:obs[idx].tipo,nota:obs[idx].nota});
   closeModal();renderHist();if(mapInst)renderMapMarks();syncOK('✓ Editado');setTimeout(hideSync,1200);
 }
 async function doDelete(){
@@ -1128,13 +1161,13 @@ async function saveNG(){
 async function saveNGEdit(id){
   const el=document.getElementById('nge-'+id);const nueva=el?.value?.trim();if(!nueva)return;
   const idx=notasGenerales.findIndex(n=>(n.id||n.ts)===id);
-  if(idx>=0){notasGenerales[idx].nota=nueva;if(notasGenerales[idx].id)await db.from('notas_generales').update({nota:nueva}).eq('id',notasGenerales[idx].id);}
+  if(idx>=0){notasGenerales[idx].nota=nueva;if(notasGenerales[idx].id)await sbUpdate('notas_generales',notasGenerales[idx].id,{nota:nueva});}
   editNGId=null;renderFichas();syncOK('✓ Editado');setTimeout(hideSync,1200);
 }
 async function delNG(id){
   if(!confirm('¿Borrar?'))return;
   const idx=notasGenerales.findIndex(n=>(n.id||n.ts)===id);
-  if(idx>=0){if(notasGenerales[idx].id)await db.from('notas_generales').delete().eq('id',notasGenerales[idx].id);notasGenerales.splice(idx,1);}
+  if(idx>=0){if(notasGenerales[idx].id)await sbDelete('notas_generales',notasGenerales[idx].id);notasGenerales.splice(idx,1);}
   renderFichas();syncOK('✓ Borrado');setTimeout(hideSync,1200);
 }
 
@@ -1147,13 +1180,13 @@ async function saveNA(pid){
 async function saveNAEdit(id){
   const el=document.getElementById('nae-'+id);const nueva=el?.value?.trim();if(!nueva)return;
   const idx=notasAnuales.findIndex(n=>(n.id||n.ts)===id);
-  if(idx>=0){notasAnuales[idx].nota=nueva;if(notasAnuales[idx].id)await db.from('notas_anuales').update({nota:nueva}).eq('id',notasAnuales[idx].id);}
+  if(idx>=0){notasAnuales[idx].nota=nueva;if(notasAnuales[idx].id)await sbUpdate('notas_anuales',notasAnuales[idx].id,{nota:nueva});}
   editNAId=null;renderFichas();syncOK('✓ Editado');setTimeout(hideSync,1200);
 }
 async function delNA(id){
   if(!confirm('¿Borrar?'))return;
   const idx=notasAnuales.findIndex(n=>(n.id||n.ts)===id);
-  if(idx>=0){if(notasAnuales[idx].id)await db.from('notas_anuales').delete().eq('id',notasAnuales[idx].id);notasAnuales.splice(idx,1);}
+  if(idx>=0){if(notasAnuales[idx].id)await sbDelete('notas_anuales',notasAnuales[idx].id);notasAnuales.splice(idx,1);}
   renderFichas();syncOK('✓ Borrado');setTimeout(hideSync,1200);
 }
 
@@ -1307,7 +1340,7 @@ async function borrarTarea(fecha,idx,tipo){
     // Buscar la tarea en el array por fecha
     const fi=tareas.findIndex(t=>t.timestamp.startsWith(fecha));
     if(fi>=0){
-      if(tareas[fi].id)await db.from('tareas').delete().eq('id',tareas[fi].id);
+      if(tareas[fi].id)await sbDelete('tareas',tareas[fi].id);
       tareas.splice(fi,1);
     }
   } else {
@@ -1316,7 +1349,7 @@ async function borrarTarea(fecha,idx,tipo){
     if(fi>=0){
       if(tareasPrevistas[fi].id||tareasPrevistas[fi].ts){
         const tid=tareasPrevistas[fi].id||tareasPrevistas[fi].ts;
-        if(tareasPrevistas[fi].id)await db.from('gcal_pending').delete().eq('id',tareasPrevistas[fi].id);
+        if(tareasPrevistas[fi].id)await sbDelete('gcal_pending',tareasPrevistas[fi].id);
       }
       tareasPrevistas.splice(fi,1);
     }
