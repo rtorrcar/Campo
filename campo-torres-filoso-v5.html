@@ -640,13 +640,13 @@ async function loadSupa(){
   obs=[];renderHist();
   try{
     // Observaciones primero
-    const so=await sbSelect('observaciones','order=timestamp.desc&limit=1000');
+    const so=await sbSelect('observaciones','select=id,timestamp,parcela_id,tipo,nota,lat,lng,acc,usuario,usuario_color&order=timestamp.desc&limit=200');
     obs=so.sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp));
     renderHist();
     syncOK('☁️ '+obs.length+' observaciones');setTimeout(hideSync,2000);
     // Resto en paralelo
     const[st,sf,fen,plu,prev,na,ng,ca]=await Promise.all([
-      sbSelect('tareas','order=timestamp.desc&limit=500'),
+      sbSelect('tareas','select=id,timestamp,parcela_id,tarea,detalle,usuario,usuario_color&order=timestamp.desc&limit=100'),
       sbSelect('fichas',''),
       sbSelect('fenologia','order=timestamp.desc&limit=500'),
       sbSelect('pluvio','order=fecha.desc&limit=200'),
@@ -890,7 +890,19 @@ function renderHist(){
   }
   document.getElementById('hist-content').innerHTML=html;
 }
-function toggleRec(id){expRec=expRec===id?null:id;renderHist();}
+function toggleRec(id){
+  expRec=expRec===id?null:id;
+  // Cargar foto solo cuando se expande, si no la tenemos aún
+  if(expRec){
+    const o=obs.find(x=>(x.id||x.legacy_id)===id);
+    if(o&&o.id&&o.foto_url===undefined){
+      sbSelect('observaciones','select=foto_url&id=eq.'+o.id).then(rows=>{
+        if(rows&&rows[0]){o.foto_url=rows[0].foto_url;renderHist();}
+      }).catch(()=>{});
+    }
+  }
+  renderHist();
+}
 function setFP(id){filterParc=id;renderHist();}
 
 // ── EDIT / DELETE ──
