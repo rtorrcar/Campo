@@ -174,7 +174,7 @@ button:active{transform:scale(.97)}
   <div class="ugrid" id="ugrid">
     <button class="ubtn" onclick="tryLogin('Rocío','#8B2635')"><div class="av">👩‍🌾</div><div class="un">Rocío</div><div class="ur">Bodeguera</div></button>
     <button class="ubtn" onclick="tryLogin('Esperanza','#4A7A4C')"><div class="av">🌿</div><div class="un">Esperanza</div><div class="ur">Viticultora</div></button>
-    <button class="ubtn" onclick="tryLogin('Trabajador','#C8A85A')"><div class="av">🧑‍🌾</div><div class="un">Trabajador</div><div class="ur">Viñedo</div></button>
+    <button class="ubtn" onclick="tryLogin('Mónica','#C8A85A')"><div class="av">🧑‍🌾</div><div class="un">Mónica</div><div class="ur">Viñedo</div></button>
     <button class="ubtn" onclick="tryLogin('Invitado','#7F8C8D')"><div class="av">👁</div><div class="un">Invitado</div><div class="ur">Solo lectura</div></button>
   </div>
   <div id="pwd-box" style="display:none;margin-top:20px;width:100%;max-width:280px">
@@ -206,6 +206,7 @@ button:active{transform:scale(.97)}
   <button class="tb" onclick="goTab('hist')">📋 Hist</button>
   <button class="tb" onclick="goTab('clima')">🌡 Clima</button>
   <button class="tb" onclick="goTab('fichas')">🍇 Fichas</button>
+  <button class="tb" onclick="goTab('lab')">📊 Lab</button>
 </div>
 
 <div id="content" style="display:none">
@@ -301,6 +302,7 @@ button:active{transform:scale(.97)}
                 <option value="cubierta">🌿 Cubierta vegetal</option>
                 <option value="riego">💧 Riego</option>
                 <option value="analitica">🧪 Analítica</option>
+                <option value="gestion_suelo">🌍 Gestión de suelo</option>
                 <option value="vendimia">🍇 Vendimia</option>
                 <option value="plantacion">🌱 Plantación</option>
                 <option value="otra">📝 Otra</option>
@@ -365,13 +367,17 @@ button:active{transform:scale(.97)}
         <div><label style="font-size:9px;font-family:var(--mono);color:var(--tl);text-transform:uppercase;display:block;margin-bottom:3px">Usuario</label>
           <select id="f-user" style="font-size:11px">
             <option value="">Todos</option>
-            <option>Rocío</option><option>Esperanza</option><option>Trabajador</option>
+            <option>Rocío</option><option>Esperanza</option><option>Mónica</option>
           </select>
         </div>
       </div>
       <div class="sl" style="margin-bottom:6px">Parcela</div>
       <div class="fbar" id="fbar"></div>
       <button class="savebtn outline" style="font-size:11px;padding:8px" onclick="renderHist()">🔍 Aplicar</button>
+      <div style="display:flex;align-items:center;gap:6px;margin-top:8px;font-size:11px;font-family:var(--mono);color:var(--tl)">
+        <label class="tsw"><input type="checkbox" id="vista-mix" onchange="renderHist()"><span class="tr"></span></label>
+        <span>Vista cronológica mezclada (obs+tareas)</span>
+      </div>
     </div>
     <div id="hist-content"></div>
     <button class="savebtn outline" style="margin-top:8px" onclick="exportar()">⬇ Exportar JSON</button>
@@ -439,7 +445,19 @@ button:active{transform:scale(.97)}
     <div id="fichas-wrap"></div>
   </div>
 
-</div>
+
+  <!-- LAB / ANALÍTICAS -->
+  <div id="p-lab" class="panel" style="padding:10px 13px 90px">
+    <!-- Sub-tabs -->
+    <div style="display:flex;gap:5px;overflow-x:auto;margin-bottom:12px;padding-bottom:2px;scrollbar-width:none">
+      <button class="fchip act" id="lab-tab-savia" onclick="setLabTab('savia')">🌿 Savia</button>
+      <button class="fchip" id="lab-tab-suelo" onclick="setLabTab('suelo')">🌱 Suelo</button>
+      <button class="fchip" id="lab-tab-agua" onclick="setLabTab('agua')">💧 Agua</button>
+      <button class="fchip" id="lab-tab-micro" onclick="setLabTab('micro')">🔬 Micro</button>
+      <button class="fchip" id="lab-tab-tratos" onclick="setLabTab('tratos')">💊 Tratos</button>
+    </div>
+    <div id="lab-content"></div>
+  </div>
 
 <!-- MODAL EDITAR -->
 <div id="modal" onclick="if(event.target===this)closeModal()">
@@ -560,7 +578,9 @@ const TIPOS=[
   {id:'muestra',    label:'Toma muestra',   icon:'🧪',color:'#1ABC9C'},
   {id:'poda_verde', label:'Poda verde',     icon:'✂️',color:'#16A085'},
   {id:'cubierta',   label:'Cubierta vegetal',icon:'🌾',color:'#8BC34A'},
-  {id:'nota_libre', label:'Nota libre',     icon:'📝',color:'#34495E'},
+  {id:'brotes_bravos',label:'Brotes bravos',  icon:'🌿',color:'#8B4513'},
+  {id:'conejera',    label:'Conejera',         icon:'🐇',color:'#A0522D'},
+  {id:'nota_libre',  label:'Nota libre',       icon:'📝',color:'#34495E'},
 ];
 const TMAP=Object.fromEntries(TIPOS.map(t=>[t.id,t]));
 
@@ -575,6 +595,7 @@ const TAREAS_L=[
   {id:'cubierta',    label:'Gestión cubierta vegetal', icon:'🌾'},
   {id:'riego',       label:'Riego',                   icon:'💧'},
   {id:'analitica',   label:'Analítica suelo/hoja',    icon:'🧪'},
+  {id:'gestion_suelo',label:'Gestión de suelo',       icon:'🌍'},
   {id:'vendimia',    label:'Vendimia',                icon:'🍇'},
 ];
 
@@ -680,7 +701,7 @@ async function loadSupa(){
 
 
 // ── CONTRASEÑA ──
-const PASSWORDS={'Rocío':'viña2026','Esperanza':'viña2026','Trabajador':'campo2026','Invitado':'campo2026'};
+const PASSWORDS={'Rocío':'viña2026','Esperanza':'viña2026','Mónica':'campo2026','Invitado':'campo2026'};
 let pendingUser=null,pendingColor=null;
 function tryLogin(n,c){
   pendingUser=n;pendingColor=c;
@@ -862,6 +883,21 @@ function renderHist(){
   // tareas
   if(tareas.length){
     html+='<div class="sl" style="margin-bottom:8px;margin-top:8px">Tareas ('+tareas.length+')</div>';
+    // Toggle vista
+    const vistaMix=document.getElementById('vista-mix')?.checked;
+    if(vistaMix){
+      // Vista cronológica mezclada
+      const all=[
+        ...filtered.map(o=>({...o,_tipo:'obs',_ts:new Date(o.timestamp)})),
+        ...tareas.map(t=>({...t,_tipo:'tar',_ts:new Date(t.timestamp)}))
+      ].sort((a,b)=>b._ts-a._ts).slice(0,80);
+      html+='<div class="sl" style="margin-bottom:8px;margin-top:8px">Todo cronológico ('+all.length+')</div>';
+      html+=all.map(r=>{
+        if(r._tipo==='tar'){const p=PMAP[r.parcela_id];const ta=TAREAS_L.find(x=>x.id===r.tarea);return '<div class="rec" style="border-left-color:'+(p?.color||'#ccc')+'"><div class="rec-top"><div class="rec-tipo">'+(ta?.icon||'✅')+' '+(ta?.label||r.tarea)+'</div><div class="rec-meta"><div class="rec-time">'+fmtDate(r.timestamp)+' '+fmtTime(r.timestamp)+'</div><div class="rec-user" style="color:'+(r.usuario_color||'#999')+'">'+(r.usuario||'')+'</div></div></div><div class="rec-parc" style="color:'+(p?.color||'#888')+'">'+(p?.nombre||'')+'</div>'+(r.detalle?'<div class="rec-nota">'+r.detalle+'</div>':'')+'</div>';}
+        const p=PMAP[r.parcela_id];const ti=TMAP[r.tipo]||{icon:'📍',label:r.tipo,color:'#666'};const uid=r.id||r.legacy_id;return '<div class="rec" style="border-left-color:'+ti.color+'" onclick="toggleRec('+uid+')"><div class="rec-top"><div class="rec-tipo" style="color:'+ti.color+'">'+ti.icon+' '+ti.label+'</div><div class="rec-meta"><div class="rec-time">'+fmtDate(r.timestamp)+' '+fmtTime(r.timestamp)+'</div><div class="rec-user" style="color:'+(r.usuario_color||'#999')+'">'+(r.usuario||'')+'</div></div></div>'+(p?'<div class="rec-parc" style="color:'+p.color+'">'+p.nombre+'</div>':'')+(r.nota?'<div class="rec-nota" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+r.nota+'</div>':'')+'</div>';
+      }).join('');
+    } else {
+    // Vista separada (default)
     html+=tareas.slice(0,15).map(t=>{const p=PMAP[t.parcela_id];const ta=TAREAS_L.find(x=>x.id===t.tarea);return '<div class="rec" style="border-left-color:'+(p?.color||'#ccc')+'"><div class="rec-top"><div class="rec-tipo">'+(ta?.icon||'✅')+' '+(ta?.label||t.tarea)+'</div><div class="rec-meta"><div class="rec-time">'+fmtDate(t.timestamp)+' '+fmtTime(t.timestamp)+'</div><div class="rec-user" style="color:'+(t.usuario_color||'#999')+'">'+(t.usuario||'')+'</div></div></div><div class="rec-parc" style="color:'+(p?.color||'#888')+'">'+(p?.nombre||'')+'</div>'+(t.detalle?'<div class="rec-nota">'+t.detalle+'</div>':'')+'</div>';}).join('');
   }
   // observaciones
@@ -888,6 +924,7 @@ function renderHist(){
       '</div>';
     }).join('');
   }
+  } // end else vista separada
   document.getElementById('hist-content').innerHTML=html;
 }
 function toggleRec(id){
@@ -1135,6 +1172,15 @@ function renderFichas(){
           const rv=c.kg_total&&c.peso_madera&&c.n_cepas?((c.kg_total/c.n_cepas)/(c.peso_madera/1000)).toFixed(1):'—';
           return '<tr><td>'+y+'/'+(parseInt(y)+1)+'</td><td style="text-align:right;font-weight:600;color:var(--v)">'+(c.kg_total||'—')+'</td><td style="text-align:right">'+(c.grado?c.grado+'°':'—')+'</td><td style="text-align:right;color:'+(rv!=='—'&&parseFloat(rv)>=3&&parseFloat(rv)<=6?'#27AE60':'#E67E22')+'">'+rv+'</td></tr>';
         }).join('')+'</tbody></table></details>':'')+
+      // Marras
+      '<div style="margin-top:12px;border-top:1px solid var(--cd);padding-top:12px">'+
+      '<div class="sl" style="margin-bottom:8px">🪦 Marras · '+p.nombre+'</div>'+
+      '<div class="fgrid" style="margin-bottom:8px">'+
+        '<div class="ff"><label>Total cepas</label><input type="number" id="mr-'+p.id+'-total" value="'+(f.marras_total||'')+'" placeholder="nº cepas"></div>'+
+        '<div class="ff"><label>Marras actuales</label><input type="number" id="mr-'+p.id+'-actuales" value="'+(f.marras_actuales||'')+'" placeholder="nº faltas"></div>'+
+        '<div class="ff full"><label>Notas marras</label><input id="mr-'+p.id+'-notas" value="'+esc(f.marras_notas||'')+'" placeholder="Hilera 3 cepas 5-7, zona pinos..."></div>'+
+      '</div>'+
+      '<button class="fsave" style="background:#7F8C8D" onclick="saveMarras(\''+p.id+'\')">💾 Guardar marras</button></div>'+
       // Notas anuales
       '<div style="margin-top:12px;border-top:1px solid var(--cd);padding-top:12px">'+
       '<div class="sl" style="margin-bottom:8px">📓 Notas '+yr+' · '+p.nombre+'</div>'+
@@ -1167,6 +1213,18 @@ async function saveFicha(pid){
   const r={parcela_id:pid,variedad:g('var'),clon:g('clon'),portainjerto:g('port'),anio:g('anio'),suelo:g('suelo'),altitud:g('alt'),orientacion:g('ori'),marco:g('marco'),notas:g('notas'),ha:g('ha')||null};
   fichas[pid]={...fichas[pid]||{},...r};
   await dbupsert('fichas',r,'parcela_id');
+}
+async function saveMarras(pid){
+  const mt=document.getElementById('mr-'+pid+'-total')?.value||null;
+  const ma=document.getElementById('mr-'+pid+'-actuales')?.value||null;
+  const mn=document.getElementById('mr-'+pid+'-notas')?.value||'';
+  if(!fichas[pid])fichas[pid]={};
+  fichas[pid].marras_total=mt?parseInt(mt):null;
+  fichas[pid].marras_actuales=ma?parseInt(ma):null;
+  fichas[pid].marras_notas=mn;
+  const r={parcela_id:pid,marras_total:mt?parseInt(mt):null,marras_actuales:ma?parseInt(ma):null,marras_notas:mn};
+  await dbupsert('fichas',{...fichas[pid],...r,parcela_id:pid},'parcela_id');
+  syncOK('✓ Marras guardadas');setTimeout(hideSync,1500);
 }
 async function saveMetr(pid){
   const gm=k=>document.getElementById('m-'+pid+'-'+k)?.value||null;
@@ -1393,9 +1451,255 @@ async function borrarTarea(fecha,idx,tipo){
   syncOK('✓ Borrado');setTimeout(hideSync,1200);
 }
 
+
+// ── LABORATORIO (datos analíticos) ──
+let labTab='savia';
+
+function setLabTab(t){
+  labTab=t;
+  ['savia','suelo','agua','micro','tratos'].forEach(id=>{
+    const btn=document.getElementById('lab-tab-'+id);
+    if(btn)btn.classList.toggle('act',id===t);
+  });
+  renderLab();
+}
+
+// DATOS HARDCODED (actualizados por Claude cuando hay nuevas analíticas)
+const LAB_SAVIA=[
+  // ── 2025 ──
+  {fecha:'09/07/2025',parcela:'P17 Tempr.Viejo',portainjerto:'SO-4',tipo:'Calidad',hoja:'joven',Azucares:2.9,pH:3.4,EC:7.7,K:2021,Ca:1659,Mg:1322,N:597,Si:121.8,Fe:6.26,Mn:11.56,Zn:10.83,B:8.28,Cu:4.66},
+  {fecha:'09/07/2025',parcela:'P17 Tempr.Viejo',portainjerto:'SO-4',tipo:'Calidad',hoja:'vieja',Azucares:4,pH:3.4,EC:7,K:1942,Ca:1313,Mg:982,N:671,Si:109.5,Fe:4.11,Mn:7.37,Zn:7.43,B:6.76,Cu:19.19},
+  {fecha:'09/07/2025',parcela:'P46 Tempr.Joven',portainjerto:'1103-P',tipo:'Producción',hoja:'joven',Azucares:2.7,pH:3.5,EC:7.6,K:1810,Ca:567,Mg:1909,N:663,Si:118.8,Fe:7.37,Mn:12.55,Zn:32.17,B:11.16,Cu:0.81},
+  {fecha:'09/07/2025',parcela:'P22 Cabernet',portainjerto:'SO-4',tipo:'Calidad',hoja:'joven',Azucares:4.2,pH:3.2,EC:6.6,K:1462,Ca:907,Mg:1151,N:525,Si:102.4,Fe:3.06,Mn:9.9,Zn:27.89,B:10.05,Cu:1.52},
+  {fecha:'14/08/2025',parcela:'P17 Tempr.Viejo',portainjerto:'SO-4',tipo:'Calidad',hoja:'joven',Azucares:2.1,pH:4.4,EC:8.5,K:1744,Ca:2037,Mg:1588,N:907,Si:121.3,Fe:18.35,Mn:16.15,Zn:14.12,B:6.19,Cu:0.7},
+  {fecha:'14/08/2025',parcela:'P46 Tempr.Joven',portainjerto:'1103-P',tipo:'Producción',hoja:'joven',Azucares:2.3,pH:4.6,EC:10.2,K:2202,Ca:2402,Mg:2548,N:822,Si:98.3,Fe:20.56,Mn:10.56,Zn:26.67,B:9.41,Cu:1.11},
+  // ── 2026 ──
+  {fecha:'18/05/2026',parcela:'P15 Moscatel',portainjerto:'41B',tipo:'Calidad',hoja:'joven',Azucares:2.1,pH:3.6,EC:6.3,K:2375,Ca:301,Mg:365,N:772,Si:53.4,Fe:1.34,Mn:3.67,Zn:3.46,B:1.76,Cu:7.06},
+  {fecha:'18/05/2026',parcela:'P17 Tempr.Viejo',portainjerto:'SO-4',tipo:'Calidad',hoja:'joven',Azucares:0.7,pH:4.6,EC:9.2,K:3914,Ca:372,Mg:367,N:970,Si:39.9,Fe:1.6,Mn:3.39,Zn:2.77,B:1.75,Cu:1.83},
+  {fecha:'18/05/2026',parcela:'P18 Sauv.Blanc',portainjerto:'SO-4',tipo:'Calidad',hoja:'joven',Azucares:1.1,pH:3.9,EC:8,K:3227,Ca:193,Mg:336,N:891,Si:41.3,Fe:1.54,Mn:2.09,Zn:3.02,B:1.44,Cu:2.49},
+  {fecha:'18/05/2026',parcela:'P46 Tempr.Joven',portainjerto:'1103-P',tipo:'Producción',hoja:'joven',Azucares:0.8,pH:4.3,EC:8.9,K:3542,Ca:355,Mg:485,N:953,Si:55.4,Fe:4.42,Mn:2.28,Zn:2.74,B:3.03,Cu:0.27},
+];
+
+const LAB_SAVIA_PARAMS=[
+  {id:'Azucares',label:'Azúcares totales',ud:'%',minB:1.1,maxB:3.2,minV:2.1,maxV:2.9},
+  {id:'pH',label:'pH',ud:'',minB:3.4,maxB:3.8,minV:3.2,maxV:3.7},
+  {id:'EC',label:'EC',ud:'mS/cm',minB:6.3,maxB:8.0,minV:6.5,maxV:8.3},
+  {id:'K',label:'K – Potasio',ud:'ppm',minB:1700,maxB:2500,minV:1475,maxV:2275},
+  {id:'Ca',label:'Ca – Calcio',ud:'ppm',minB:300,maxB:1300,minV:295,maxV:1180},
+  {id:'Mg',label:'Mg – Magnesio',ud:'ppm',minB:510,maxB:830,minV:510,maxV:830},
+  {id:'N',label:'N – Nitrógeno T.',ud:'ppm',minB:450,maxB:810,minV:510,maxV:1080},
+  {id:'Si',label:'Si – Sílice',ud:'ppm',minB:70,maxB:110,minV:70,maxV:110},
+  {id:'Fe',label:'Fe – Hierro',ud:'ppm',minB:2.2,maxB:6.8,minV:2.2,maxV:6.8},
+  {id:'Mn',label:'Mn – Manganeso',ud:'ppm',minB:8.3,maxB:22.8,minV:8.3,maxV:22.8},
+  {id:'Zn',label:'Zn – Zinc',ud:'ppm',minB:3.5,maxB:6.6,minV:3.5,maxV:6.6},
+  {id:'B',label:'B – Boro',ud:'ppm',minB:3,maxB:5.5,minV:3,maxV:5.5},
+  {id:'Cu',label:'Cu – Cobre',ud:'ppm',minB:0.45,maxB:3.15,minV:0.45,maxV:3.15},
+];
+
+const LAB_SUELO=[
+  {param:'Arena',ud:'%',ref:'—',cab2024:67,tj2024:61.9,cab2026_20:69.6,cab2026_40:69.6,tj2026_20:69.6,tj2026_40:69.8},
+  {param:'Limo',ud:'%',ref:'—',cab2024:17.1,tj2024:17.3,cab2026_20:19.6,cab2026_40:17,tj2026_20:17,tj2026_40:16.8},
+  {param:'Arcilla',ud:'%',ref:'—',cab2024:15.9,tj2024:20.9,cab2026_20:10.8,cab2026_40:13.3,tj2026_20:13.3,tj2026_40:13.3},
+  {param:'pH',ud:'',ref:'6.0–7.5',cab2024:8.3,tj2024:8.3,cab2026_20:7.7,cab2026_40:7.9,tj2026_20:8.2,tj2026_40:8.3},
+  {param:'Materia Orgánica',ud:'%',ref:'2.0–4.0',cab2024:1.32,tj2024:1.21,cab2026_20:2.82,cab2026_40:2.54,tj2026_20:1.2,tj2026_40:1.01},
+  {param:'Nitrógeno Total',ud:'%',ref:'0.1–0.2',cab2024:0.07,tj2024:0.07,cab2026_20:0.15,cab2026_40:0.14,tj2026_20:0.07,tj2026_40:0.07},
+  {param:'N Nítrico',ud:'ppm',ref:'10–30',cab2024:3,tj2024:3,cab2026_20:13,cab2026_40:6,tj2026_20:3,tj2026_40:2},
+  {param:'Fósforo Asim.',ud:'ppm',ref:'20–60',cab2024:25,tj2024:19,cab2026_20:85,cab2026_40:111,tj2026_20:20,tj2026_40:24},
+  {param:'Potasio Asim.',ud:'meq/100g',ref:'0.3–0.8',cab2024:0.61,tj2024:0.52,cab2026_20:1.21,cab2026_40:1.49,tj2026_20:0.66,tj2026_40:0.59},
+  {param:'Magnesio Asim.',ud:'meq/100g',ref:'1.5–4.0',cab2024:0.52,tj2024:0.68,cab2026_20:1.77,cab2026_40:1.95,tj2026_20:1.03,tj2026_40:1.12},
+  {param:'Hierro Asim.',ud:'ppm',ref:'5–20',cab2024:2.16,tj2024:1.93,cab2026_20:3.3,cab2026_40:3.38,tj2026_20:2.24,tj2026_40:2.12},
+  {param:'Zinc Asim.',ud:'ppm',ref:'1.0–5.0',cab2024:0.56,tj2024:0.26,cab2026_20:4.24,cab2026_40:1.74,tj2026_20:1.4,tj2026_40:0.47},
+  {param:'Boro Asim.',ud:'ppm',ref:'0.5–2.0',cab2024:0.24,tj2024:0.19,cab2026_20:0.41,cab2026_40:0.51,tj2026_20:0.17,tj2026_40:0.24},
+  {param:'Caliza Activa',ud:'%',ref:'<3.0',cab2024:4.78,tj2024:8.02,cab2026_20:2.4,cab2026_40:0.8,tj2026_20:4,tj2026_40:3.2},
+];
+
+const LAB_AGUA=[
+  {param:'Conductividad eléctrica',ud:'mS/cm',valor:1.65,ref:'<0.75 ideal; <2.0 aceptable',ok:false},
+  {param:'pH',ud:'',valor:7.2,ref:'6.5–8.0',ok:true},
+  {param:'Nitratos',ud:'mg/l',valor:30,ref:'<50',ok:true},
+  {param:'Bicarbonatos',ud:'mg/l',valor:244,ref:'<180 deseable',ok:false},
+  {param:'Sulfatos',ud:'mg/l',valor:1011,ref:'<400 deseable',ok:false},
+  {param:'Cloruros',ud:'mg/l',valor:42,ref:'<100',ok:true},
+  {param:'Potasio',ud:'mg/l',valor:9,ref:'<20',ok:true},
+  {param:'Sodio',ud:'mg/l',valor:29,ref:'<115',ok:true},
+  {param:'Magnesio',ud:'mg/l',valor:95,ref:'<60 deseable',ok:false},
+  {param:'Calcio',ud:'mg/l',valor:378,ref:'<200 deseable',ok:false},
+  {param:'Sales totales disueltas',ud:'g/l',valor:1.41,ref:'<1.5',ok:true},
+  {param:'Dureza',ud:'°F',valor:133,ref:'Muy dura ⚠',ok:false},
+];
+
+const LAB_MICRO=[
+  {org:'Hongos (μg/g)',opt:'270–6750',m1:0,m2:2.8,e1:'⬇⬇ Muy bajo',e2:'⬇ Bajo',obs:'M1: suelo bloqueado. M2: inicio recuperación.'},
+  {org:'Bacterias (μg/g)',opt:'135–1350',m1:4410,m2:1436,e1:'⬆⬆ Muy alto',e2:'⬆ Alto',obs:'M1: nutrientes bloqueados. M2: bajo control.'},
+  {org:'Actinobacterias (μg/g)',opt:'1–4',m1:0,m2:0.1,e1:'⬇⬇ Muy bajo',e2:'⬇ Bajo',obs:'M2 muestra potencial.'},
+  {org:'Ratio F:B (ideal 2–5:1)',opt:'2–5:1',m1:0,m2:0,e1:'⬇⬇ Muy bajo',e2:'⬇⬇ Muy bajo',obs:'Aún sin avance. M2 en movimiento.'},
+  {org:'Nematodos bacterífagos (#/g)',opt:'300',m1:0,m2:0,e1:'⬇⬇ Muy bajo',e2:'⬇⬇ Muy bajo',obs:'Siguiente paso evolutivo.'},
+  {org:'Flagelados (#/g)',opt:'>50.000',m1:0,m2:22000,e1:'⬇⬇ Muy bajo',e2:'⬇ Bajo',obs:'M2: activa estructura. Dato positivo.'},
+  {org:'Amebas (#/g)',opt:'>50.000',m1:0,m2:7333,e1:'⬇⬇ Muy bajo',e2:'⬇⬇ Muy bajo',obs:'M2: diversidad 2º nivel trófico.'},
+  {org:'Oomicetos (μg/g)',opt:'0 (deseable)',m1:1.9,m2:0,e1:'⬆ Alto',e2:'✓ OK',obs:'M1: patógenos oportunistas.'},
+];
+
+const LAB_TRATOS=[
+  // 2025
+  {fecha:'23/04/2025',producto:'FUNGISTOP',tipo:'Azufre',parcelas:'P15 Moscatel',notas:'Primera pasada azufre temporada'},
+  {fecha:'16/05/2025',producto:'CEPSUL ESPECIAL',tipo:'Azufre',parcelas:'Todas',notas:'25 kg · 19€'},
+  {fecha:'19/05/2025',producto:'FUNGISTOP + AIRONE COBRE',tipo:'Azufre+Cobre',parcelas:'Todas',notas:''},
+  {fecha:'05-09/06/2025',producto:'FUNGISTOP + SERGOMIL',tipo:'Azufre+Cobre',parcelas:'P46, Moscatel, Merlot, Sauv., Cab., Airén',notas:''},
+  {fecha:'18/06/2025',producto:'GROWMIC',tipo:'Riego',parcelas:'Todas',notas:'30×5kg · 364,72€ · Fertirrigación'},
+  {fecha:'11/07/2025',producto:'GROWMIC + VERDEZIN EXTRA',tipo:'Riego',parcelas:'Todas',notas:'20×5kg + 10×5kg · 308,60€'},
+  {fecha:'17/07/2025',producto:'SERVANITRO START + SERVAK',tipo:'Foliar',parcelas:'P46 Temp.Joven',notas:'60×5kg · 362,61€'},
+  {fecha:'28/07/2025',producto:'NUTRISA MOLIBDENO + CALCIO SERVALESA',tipo:'Foliar',parcelas:'Todas menos Airén',notas:'15×5L+5uds · 246,56€'},
+  // 2026
+  {fecha:'14/04/2026',producto:'CEPSUL AZUFRE CÚPRICO',tipo:'Azufre+Cobre',parcelas:'P15 Moscatel',notas:'25kg · 43,51€ · Fac VT/26-00637'},
+  {fecha:'05/05/2026',producto:'FUNGISTOP + HAIFASTIM COMBAT',tipo:'Azufre+Cobre',parcelas:'Todas',notas:'20×5L + 10×5L · 157,17€ · Fac VT/26-00881'},
+  {fecha:'18/05/2026',producto:'Toma muestras savia',tipo:'Otro',parcelas:'P15, P17, P18, P46',notas:'Antes del tratamiento del mismo día'},
+];
+
+function saviaSt(val,param,etapa){
+  const min=etapa==='B'?param.minB:param.minV;
+  const max=etapa==='B'?param.maxB:param.maxV;
+  if(val===null||val===undefined)return{icon:'—',color:'#ccc'};
+  if(val<min*0.7)return{icon:'⬇⬇',color:'#C0392B'};
+  if(val<min)return{icon:'⬇',color:'#E67E22'};
+  if(val>max*1.3)return{icon:'⬆⬆',color:'#8E44AD'};
+  if(val>max)return{icon:'⬆',color:'#F39C12'};
+  return{icon:'✓',color:'#27AE60'};
+}
+
+function renderLab(){
+  const el=document.getElementById('lab-content');if(!el)return;
+  if(labTab==='savia')el.innerHTML=renderSavia();
+  else if(labTab==='suelo')el.innerHTML=renderSuelo();
+  else if(labTab==='agua')el.innerHTML=renderAgua();
+  else if(labTab==='micro')el.innerHTML=renderMicro();
+  else if(labTab==='tratos')el.innerHTML=renderTratos();
+  // Auto-scroll charts right
+  setTimeout(()=>el.querySelectorAll('.scroll-r').forEach(s=>s.scrollLeft=s.scrollWidth),100);
+}
+
+function renderSavia(){
+  const fechas=[...new Set(LAB_SAVIA.map(s=>s.fecha))];
+  let html='<div class="card" style="margin-bottom:10px"><div class="sl" style="margin-bottom:4px">Análisis de savia · NovaCropControl</div>'+
+    '<div style="font-size:10px;color:var(--tl);font-family:var(--mono);margin-bottom:8px">'+
+    fechas.map(f=>{const etapa=f.includes('2025')?'Verano':'Brotación';return f+' ('+etapa+')';}).join(' · ')+'</div></div>';
+  
+  // For each date, show a card
+  fechas.forEach(fecha=>{
+    const muestras=LAB_SAVIA.filter(s=>s.fecha===fecha&&s.hoja==='joven');
+    const etapa=fecha.includes('07')||fecha.includes('08')?'V':'B';
+    html+='<div class="card" style="margin-bottom:12px">'+
+      '<div style="font-size:12px;font-weight:700;margin-bottom:8px;font-family:var(--mono)">'+fecha+
+      ' <span style="font-size:9px;background:var(--cd);padding:2px 6px;border-radius:10px">'+(etapa==='B'?'Brotación':'Verano')+'</span></div>'+
+      '<div style="overflow-x:auto;-webkit-overflow-scrolling:touch" class="scroll-r">'+
+      '<table style="min-width:500px;border-collapse:collapse;font-size:10px;font-family:var(--mono)">'+
+      '<thead><tr><th style="text-align:left;padding:3px 6px;border-bottom:2px solid var(--cd);min-width:120px">Parámetro</th>'+
+      muestras.map(m=>'<th style="text-align:center;padding:3px 6px;border-bottom:2px solid var(--cd);color:'+
+        (PMAP[m.parcela.toLowerCase().replace(/[^a-z]/g,'')] ? '#555':'var(--tl)')+';min-width:80px">'+m.parcela+'</th>').join('')+
+      '<th style="padding:3px 6px;border-bottom:2px solid var(--cd);color:var(--tl);min-width:60px">Óptimo</th></tr></thead>'+
+      '<tbody>'+
+      LAB_SAVIA_PARAMS.map(p=>'<tr style="border-bottom:1px solid var(--cd)">'+
+        '<td style="padding:3px 6px">'+(p.ud?p.label+' ('+p.ud+')':p.label)+'</td>'+
+        muestras.map(m=>{const v=m[p.id];const st=saviaSt(v,p,etapa);return '<td style="text-align:center;padding:3px 6px;font-weight:600;color:'+st.color+'">'+
+          (v!==null&&v!==undefined?v:'-')+'<br><span style="font-size:9px">'+st.icon+'</span></td>';}).join('')+
+        '<td style="padding:3px 6px;color:var(--tl);font-size:9px">'+(etapa==='B'?p.minB+'–'+p.maxB:p.minV+'–'+p.maxV)+'</td>'+
+      '</tr>').join('')+
+      '</tbody></table></div></div>';
+  });
+  return html;
+}
+
+function renderSuelo(){
+  return '<div class="card"><div class="sl" style="margin-bottom:8px">Análisis suelo · ITAP · Polígono 59 Villarrobledo</div>'+
+    '<div style="overflow-x:auto;-webkit-overflow-scrolling:touch" class="scroll-r">'+
+    '<table style="min-width:600px;border-collapse:collapse;font-size:10px;font-family:var(--mono)">'+
+    '<thead><tr>'+
+    '<th style="text-align:left;padding:3px 5px;border-bottom:2px solid var(--cd);min-width:130px">Parámetro</th>'+
+    '<th style="padding:3px 5px;border-bottom:2px solid var(--cd);color:var(--tl);min-width:55px">Ud.</th>'+
+    '<th style="padding:3px 5px;border-bottom:2px solid var(--cd);color:var(--tl);min-width:65px">Ref.</th>'+
+    '<th style="text-align:center;padding:3px 5px;border-bottom:2px solid var(--cd);color:#8B2635;min-width:70px">Cab. 2024</th>'+
+    '<th style="text-align:center;padding:3px 5px;border-bottom:2px solid var(--cd);color:#E74C3C;min-width:70px">TJ 2024</th>'+
+    '<th style="text-align:center;padding:3px 5px;border-bottom:2px solid var(--cd);color:#27AE60;min-width:75px">Cab. 26 20cm</th>'+
+    '<th style="text-align:center;padding:3px 5px;border-bottom:2px solid var(--cd);color:#2E8B57;min-width:75px">Cab. 26 40cm</th>'+
+    '<th style="text-align:center;padding:3px 5px;border-bottom:2px solid var(--cd);color:#3498DB;min-width:75px">TJ 26 20cm</th>'+
+    '<th style="text-align:center;padding:3px 5px;border-bottom:2px solid var(--cd);color:#2980B9;min-width:75px">TJ 26 40cm</th>'+
+    '</tr></thead><tbody>'+
+    LAB_SUELO.map(r=>'<tr style="border-bottom:1px solid var(--cd)">'+
+      '<td style="padding:3px 5px">'+r.param+'</td>'+
+      '<td style="padding:3px 5px;color:var(--tl)">'+r.ud+'</td>'+
+      '<td style="padding:3px 5px;color:var(--tl);font-size:9px">'+r.ref+'</td>'+
+      [r.cab2024,r.tj2024,r.cab2026_20,r.cab2026_40,r.tj2026_20,r.tj2026_40].map(v=>'<td style="text-align:center;padding:3px 5px;font-weight:600">'+v+'</td>').join('')+
+    '</tr>').join('')+
+    '</tbody></table></div>'+
+    '<div style="font-size:9px;color:var(--tl);font-family:var(--mono);margin-top:8px">Cab=Cabernet (P22≈P17) · TJ=Tempranillo Joven (P46) · Nov 2024 y Feb 2026 · Profundidad 0–20cm y 20–40cm</div></div>';
+}
+
+function renderAgua(){
+  return '<div class="card"><div class="sl" style="margin-bottom:8px">Análisis agua de riego · ITAP · Julio 2025 · P59/46</div>'+
+    '<div style="background:#FFF8EE;border-left:4px solid #F39C12;border-radius:8px;padding:10px 12px;margin-bottom:10px;font-size:11px;font-family:var(--mono)">'+
+    '⚠️ Sulfatos muy altos (1011 mg/l), Calcio alto y Bicarbonatos altos. Contribuye al encalamiento. Recomendable acidificar el agua de riego.</div>'+
+    LAB_AGUA.map(r=>'<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--cd)">'+
+      '<div><div style="font-size:12px;font-family:var(--mono)">'+(r.ud?r.param+' ('+r.ud+')':r.param)+'</div>'+
+      '<div style="font-size:9px;color:var(--tl)">'+r.ref+'</div></div>'+
+      '<div style="font-size:14px;font-weight:700;color:'+(r.ok?'#27AE60':'#E74C3C')+'">'+r.valor+' <span style="font-size:10px">'+(r.ok?'✓':'⚠')+'</span></div>'+
+    '</div>').join('')+'</div>';
+}
+
+function renderMicro(){
+  return '<div class="card"><div class="sl" style="margin-bottom:8px">Microbiología suelo · SCLab · Junio 2025</div>'+
+    '<div style="background:#F0FBF0;border-left:4px solid #27AE60;border-radius:8px;padding:10px 12px;margin-bottom:10px;font-size:10px;font-family:var(--mono)">'+
+    '💡 M1=Bloqueada (Cab.Sauv) · M2=En recuperación (Temp.Joven)<br>Ratio F:B objetivo viña: 2–5:1 — actualmente en 0. Programa biológico hacia dominancia fúngica.</div>'+
+    '<table style="width:100%;border-collapse:collapse;font-size:10px;font-family:var(--mono)">'+
+    '<thead><tr>'+
+    '<th style="text-align:left;padding:4px;border-bottom:2px solid var(--cd)">Organismo</th>'+
+    '<th style="text-align:center;padding:4px;border-bottom:2px solid var(--cd)">Óptimo</th>'+
+    '<th style="text-align:center;padding:4px;border-bottom:2px solid var(--cd);color:#C0392B">M1</th>'+
+    '<th style="text-align:center;padding:4px;border-bottom:2px solid var(--cd);color:#27AE60">M2</th>'+
+    '</tr></thead><tbody>'+
+    LAB_MICRO.map(r=>'<tr style="border-bottom:1px solid var(--cd)">'+
+      '<td style="padding:4px 4px"><div>'+r.org+'</div>'+
+      '<div style="font-size:9px;color:var(--tl);font-style:italic">'+r.obs+'</div></td>'+
+      '<td style="text-align:center;padding:4px;color:var(--tl)">'+r.opt+'</td>'+
+      '<td style="text-align:center;padding:4px;font-weight:600;color:'+(r.e1.includes('bajo')||r.e1.includes('bajo')?'#C0392B':r.e1.includes('alto')?'#F39C12':'#27AE60')+'">'+r.m1+'<br><span style="font-size:8px">'+r.e1+'</span></td>'+
+      '<td style="text-align:center;padding:4px;font-weight:600;color:'+(r.e2.includes('bajo')?'#E67E22':r.e2.includes('alto')?'#F39C12':'#27AE60')+'">'+r.m2+'<br><span style="font-size:8px">'+r.e2+'</span></td>'+
+    '</tr>').join('')+'</tbody></table></div>';
+}
+
+const TRATO_COLORS={'Azufre':'#F39C12','Cobre':'#C0392B','Azufre+Cobre':'#E67E22','Foliar':'#27AE60','Riego':'#3498DB','Orgánico':'#8BC34A','Bioestim.':'#9B59B6','Otro':'#7F8C8D'};
+function renderTratos(){
+  let html='<div style="margin-bottom:8px;font-size:10px;font-family:var(--mono);color:var(--tl)">'+
+    Object.entries(TRATO_COLORS).map(([k,v])=>'<span style="margin-right:8px"><span style="color:'+v+'">●</span> '+k+'</span>').join('')+
+  '</div>';
+  const porAnio={};
+  LAB_TRATOS.forEach(t=>{const y=t.fecha.split('/')[2]||'2026';if(!porAnio[y])porAnio[y]=[];porAnio[y].push(t);});
+  Object.entries(porAnio).sort((a,b)=>b[0]-a[0]).forEach(([anio,tratos])=>{
+    html+='<div class="card" style="margin-bottom:10px"><div class="sl" style="margin-bottom:8px">Temporada '+anio+'</div>'+
+      tratos.map(t=>{const col=TRATO_COLORS[t.tipo]||'#888';return '<div style="display:flex;align-items:flex-start;gap:8px;padding:6px 0;border-bottom:1px solid var(--cd)">'+
+        '<div style="width:7px;height:7px;border-radius:50%;background:'+col+';flex-shrink:0;margin-top:4px"></div>'+
+        '<div style="flex:1">'+
+        '<div style="display:flex;justify-content:space-between">'+
+        '<div style="font-size:11px;font-weight:700;font-family:var(--mono)">'+t.producto+'</div>'+
+        '<div style="font-size:9px;color:var(--tl);font-family:var(--mono)">'+t.fecha+'</div></div>'+
+        '<div style="font-size:9px;color:var(--tl)">'+t.parcelas+(t.notas?' · '+t.notas:'')+'</div>'+
+        '</div></div>';}).join('')+'</div>';
+  });
+  // Add tasks from app
+  if(tareas.length){
+    html+='<div class="card"><div class="sl" style="margin-bottom:8px">Registros en campo (app)</div>'+
+      tareas.slice(0,20).map(t=>{const p=PMAP[t.parcela_id];const ta=TAREAS_L.find(x=>x.id===t.tarea);
+        return '<div style="display:flex;align-items:flex-start;gap:8px;padding:5px 0;border-bottom:1px solid var(--cd)">'+
+          '<div style="font-size:18px">'+( ta?.icon||'✅')+'</div>'+
+          '<div style="flex:1"><div style="font-size:11px;font-family:var(--mono);font-weight:600">'+(ta?.label||t.tarea)+'</div>'+
+          '<div style="font-size:9px;color:var(--tl)">'+(p?.nombre||'')+'  ·  '+fmtDate(t.timestamp)+'  ·  '+( t.usuario||'')+'</div>'+
+          (t.detalle?'<div style="font-size:10px;font-style:italic">'+t.detalle+'</div>':'')+
+          '</div></div>';}).join('')+'</div>';
+  }
+  return html;
+}
+
+
 // ── TABS ──
-const PTITLES={obs:'🌿 Observar',tareas:'✅ Tareas · Calendario',mapa:'🗺 Mapa',hist:'📋 Historial',clima:'🌡 Clima',fichas:'🍇 Fichas'};
-const PTABS=['obs','tareas','mapa','hist','clima','fichas'];
+const PTITLES={obs:'🌿 Observar',tareas:'✅ Tareas · Calendario',mapa:'🗺 Mapa',hist:'📋 Historial',clima:'🌡 Clima',fichas:'🍇 Fichas',lab:'📊 Laboratorio'};
+const PTABS=['obs','tareas','mapa','hist','clima','fichas','lab'];
 function goTab(name){
   curTab=name;
   document.querySelectorAll('.panel').forEach(p=>{p.classList.remove('act');p.style.display='none';});
@@ -1409,6 +1713,7 @@ function goTab(name){
   if(name==='hist')renderHist();
   if(name==='clima'){loadClima();renderPluvHist();}
   if(name==='fichas')renderFichas();
+  if(name==='lab')renderLab();
 }
 
 // ── EXPORT ──
