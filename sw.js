@@ -1,6 +1,6 @@
 // Service worker de Campo · Torres Filoso
 // Red primero: siempre intenta traer la versión nueva; si no hay conexión, usa la guardada.
-const CACHE = 'campo-tf-v1';
+const CACHE = 'campo-tf-v2';
 const BASE = [
   './campo-torres-filoso-v5.html',
   './manifest.json',
