@@ -1,6 +1,6 @@
 {
-  "name": "Cuaderno de Campo · Torres Filoso",
-  "short_name": "Campo",
+  "name": "App Campo · Torres Filoso",
+  "short_name": "App Campo",
   "description": "Cuaderno de campo de los viñedos de Torres Filoso",
   "start_url": "./campo-torres-filoso-v5.html",
   "scope": "./",
