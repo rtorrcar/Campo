@@ -1,0 +1,17 @@
+{
+  "name": "Cuaderno de Campo · Torres Filoso",
+  "short_name": "Campo",
+  "description": "Cuaderno de campo de los viñedos de Torres Filoso",
+  "start_url": "./campo-torres-filoso-v5.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#1C2B1D",
+  "theme_color": "#1C2B1D",
+  "lang": "es",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

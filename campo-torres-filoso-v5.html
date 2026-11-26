@@ -5,6 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#1C2B1D">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Campo">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <title>🌿 Campo · Torres Filoso</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
@@ -362,6 +368,8 @@ button:active{transform:scale(.97)}
             <option value="muestra">🧪 Muestra</option>
             <option value="poda_verde">✂️ Poda verde</option>
             <option value="nota_libre">📝 Nota libre</option>
+            <option value="brotes_bordes">🌿 Brotes bordes</option>
+            <option value="piedra_grande">🪨 Piedra grande</option>
           </select>
         </div>
         <div><label style="font-size:9px;font-family:var(--mono);color:var(--tl);text-transform:uppercase;display:block;margin-bottom:3px">Usuario</label>
@@ -455,6 +463,7 @@ button:active{transform:scale(.97)}
       <button class="fchip" id="lab-tab-agua" onclick="setLabTab('agua')">💧 Agua</button>
       <button class="fchip" id="lab-tab-micro" onclick="setLabTab('micro')">🔬 Micro</button>
       <button class="fchip" id="lab-tab-tratos" onclick="setLabTab('tratos')">💊 Tratos</button>
+      <button class="fchip" id="lab-tab-contactos" onclick="setLabTab('contactos')">📞 Contactos</button>
     </div>
     <div id="lab-content"></div>
   </div>
@@ -578,7 +587,8 @@ const TIPOS=[
   {id:'muestra',    label:'Toma muestra',   icon:'🧪',color:'#1ABC9C'},
   {id:'poda_verde', label:'Poda verde',     icon:'✂️',color:'#16A085'},
   {id:'cubierta',   label:'Cubierta vegetal',icon:'🌾',color:'#8BC34A'},
-  {id:'brotes_bravos',label:'Brotes bravos',  icon:'🌿',color:'#8B4513'},
+  {id:'brotes_bordes',label:'Brotes bordes',  icon:'🌿',color:'#8B4513'},
+  {id:'piedra_grande', label:'Piedra grande',   icon:'🪨',color:'#95A5A6'},
   {id:'conejera',    label:'Conejera',         icon:'🐇',color:'#A0522D'},
   {id:'nota_libre',  label:'Nota libre',       icon:'📝',color:'#34495E'},
 ];
@@ -661,7 +671,7 @@ async function loadSupa(){
   obs=[];renderHist();
   try{
     // Observaciones primero
-    const so=await sbSelect('observaciones','select=id,timestamp,parcela_id,tipo,nota,lat,lng,acc,usuario,usuario_color&order=timestamp.desc&limit=200');
+    const so=await sbSelect('observaciones','select=id,timestamp,parcela_id,tipo,nota,lat,lng,acc,usuario,usuario_color,subsanada,fecha_subsanado&order=timestamp.desc&limit=200');
     obs=so.sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp));
     renderHist();
     syncOK('☁️ '+obs.length+' observaciones');setTimeout(hideSync,2000);
@@ -907,8 +917,8 @@ function renderHist(){
     html+=filtered.map(o=>{
       const p=PMAP[o.parcela_id];const ti=TMAP[o.tipo]||{icon:'📍',label:o.tipo,color:'#666'};
       const uid=o.id||o.legacy_id;const isExp=expRec===uid;
-      return '<div class="rec" style="border-left-color:'+ti.color+'" onclick="toggleRec('+uid+')">'+
-        '<div class="rec-top"><div class="rec-tipo" style="color:'+ti.color+'">'+ti.icon+' '+ti.label+'</div>'+
+      return '<div class="rec" style="border-left-color:'+(o.subsanada?'#27AE60':ti.color)+';opacity:'+(o.subsanada?0.6:1)+'" onclick="toggleRec('+uid+')">'+
+        '<div class="rec-top"><div class="rec-tipo" style="color:'+(o.subsanada?'#27AE60':ti.color)+'">'+ti.icon+' '+ti.label+(o.subsanada?' <span style="font-size:9px;background:#27AE60;color:#fff;padding:1px 5px;border-radius:8px;font-family:var(--mono)">SUBSANADA</span>':'')+' </div>'+
         '<div class="rec-meta"><div class="rec-time">'+fmtDate(o.timestamp)+' '+fmtTime(o.timestamp)+'</div>'+
         '<div class="rec-user" style="color:'+(o.usuario_color||'#999')+'">'+(o.usuario||'')+'</div></div></div>'+
         (p?'<div class="rec-parc" style="color:'+p.color+'">'+p.nombre+'</div>':'')+
@@ -918,6 +928,7 @@ function renderHist(){
           (o.lat?'<div class="rec-gps">📍 '+o.lat.toFixed(5)+', '+o.lng.toFixed(5)+' ±'+o.acc+'m</div>':'')+
           '<div class="rec-acts">'+
             '<button class="ract" style="background:#F0F8F0;color:var(--v)" onclick="event.stopPropagation();openEdit('+uid+')">✏️ Editar</button>'+
+            (!o.subsanada?'<button class="ract" style="background:#EDF7ED;color:#27AE60" onclick="event.stopPropagation();subsanarObs('+uid+')">✅ Subsanar</button>':'')+
             '<button class="ract" style="background:#FEF0F0;color:#C0392B" onclick="event.stopPropagation();editId='+uid+';doDelete()">🗑 Borrar</button>'+
           '</div>'
         :(o.nota?'<div class="rec-nota" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+o.nota+'</div>':''))+
@@ -926,6 +937,18 @@ function renderHist(){
   }
   } // end else vista separada
   document.getElementById('hist-content').innerHTML=html;
+}
+async function subsanarObs(uid){
+  if(!confirm('¿Marcar como subsanada? Desaparecerá del mapa.'))return;
+  const idx=obs.findIndex(x=>(x.id||x.legacy_id)===uid);
+  if(idx<0)return;
+  obs[idx].subsanada=true;
+  obs[idx].fecha_subsanado=new Date().toISOString();
+  if(obs[idx].id){
+    await sbUpdate('observaciones',obs[idx].id,{subsanada:true,fecha_subsanado:obs[idx].fecha_subsanado});
+  }
+  renderHist();if(mapInst)renderMapMarks();
+  syncOK('✅ Observación subsanada');setTimeout(hideSync,1500);
 }
 function toggleRec(id){
   expRec=expRec===id?null:id;
@@ -1007,6 +1030,7 @@ function renderMapMarks(){
   let filtered=obs;
   if(desde)filtered=filtered.filter(o=>o.timestamp>=desde);
   if(hasta)filtered=filtered.filter(o=>o.timestamp<=hasta+'T23:59:59');
+  filtered=filtered.filter(o=>!o.subsanada);
   filtered.forEach(o=>{
     if(!o.lat||!o.lng)return;
     const ti=TMAP[o.tipo]||{icon:'📍',color:'#666',label:o.tipo};
@@ -1457,7 +1481,7 @@ let labTab='savia';
 
 function setLabTab(t){
   labTab=t;
-  ['savia','suelo','agua','micro','tratos'].forEach(id=>{
+  ['savia','suelo','agua','micro','tratos','contactos'].forEach(id=>{
     const btn=document.getElementById('lab-tab-'+id);
     if(btn)btn.classList.toggle('act',id===t);
   });
@@ -1573,6 +1597,7 @@ function renderLab(){
   else if(labTab==='agua')el.innerHTML=renderAgua();
   else if(labTab==='micro')el.innerHTML=renderMicro();
   else if(labTab==='tratos')el.innerHTML=renderTratos();
+  else if(labTab==='contactos')el.innerHTML=renderContactos();
   // Auto-scroll charts right
   setTimeout(()=>el.querySelectorAll('.scroll-r').forEach(s=>s.scrollLeft=s.scrollWidth),100);
 }
@@ -1697,6 +1722,72 @@ function renderTratos(){
 }
 
 
+
+const CONTACTOS_DEFAULT=[
+  {cat:'🚜 Maquinaria',items:[
+    {nombre:'Mecánico tractores',tel:'',notas:''},
+    {nombre:'Ruedas / neumáticos',tel:'',notas:''},
+    {nombre:'Reparación riego',tel:'',notas:''},
+  ]},
+  {cat:'🌱 Insumos agrícolas',items:[
+    {nombre:'Los Poceros (fitosanitarios)',tel:'',notas:'Villarrobledo'},
+    {nombre:'Abono / humus',tel:'',notas:''},
+    {nombre:'Proveedores Growmic',tel:'',notas:''},
+  ]},
+  {cat:'🏛 Institucional',items:[
+    {nombre:'UPA CLM',tel:'',notas:''},
+    {nombre:'FADEMUR',tel:'',notas:''},
+    {nombre:'Certificadora ecológica',tel:'',notas:''},
+    {nombre:'ITAP analíticas',tel:'',notas:''},
+  ]},
+  {cat:'🍇 Viticultores / Vecinos',items:[
+    {nombre:'',tel:'',notas:''},
+  ]},
+];
+
+function loadContactos(){
+  try{return JSON.parse(localStorage.getItem('tf_contactos')||'null')||CONTACTOS_DEFAULT;}
+  catch(e){return CONTACTOS_DEFAULT;}
+}
+function saveContactos(data){
+  try{localStorage.setItem('tf_contactos',JSON.stringify(data));}catch(e){}
+}
+
+function renderContactos(){
+  const data=loadContactos();
+  let html='<div style="font-size:10px;color:var(--tl);font-family:var(--mono);margin-bottom:10px">Los contactos se guardan en este dispositivo.</div>';
+  data.forEach((cat,ci)=>{
+    html+='<div class="card" style="margin-bottom:10px">'+
+      '<div class="sl" style="margin-bottom:8px">'+cat.cat+'</div>'+
+      cat.items.map((item,ii)=>'<div style="border-bottom:1px solid var(--cd);padding:6px 0">'+
+        '<div style="display:grid;grid-template-columns:1fr auto;gap:4px;margin-bottom:4px">'+
+        '<input id="ct-'+ci+'-'+ii+'-n" value="'+esc(item.nombre||'')+'" placeholder="Nombre..." onchange="updateContacto('+ci+','+ii+')" style="font-size:12px;padding:5px 7px;border-radius:6px;border:1.5px solid var(--cd)">'+
+        '<input id="ct-'+ci+'-'+ii+'-t" value="'+esc(item.tel||'')+'" placeholder="Teléfono" onchange="updateContacto('+ci+','+ii+')" style="font-size:12px;padding:5px 7px;border-radius:6px;border:1.5px solid var(--cd);width:110px">'+
+        '</div>'+
+        '<input id="ct-'+ci+'-'+ii+'-o" value="'+esc(item.notas||'')+'" placeholder="Notas..." onchange="updateContacto('+ci+','+ii+')" style="width:100%;font-size:11px;padding:4px 7px;border-radius:6px;border:1.5px solid var(--cd)">'+
+        '</div>'
+      ).join('')+
+      '<button onclick="addContacto('+ci+')" style="margin-top:8px;padding:5px 12px;border-radius:7px;border:1.5px solid var(--cd);background:#fff;font-size:11px;cursor:pointer;font-family:var(--mono)">+ Añadir</button>'+
+    '</div>';
+  });
+  return html;
+}
+
+function updateContacto(ci,ii){
+  const data=loadContactos();
+  data[ci].items[ii].nombre=document.getElementById('ct-'+ci+'-'+ii+'-n')?.value||'';
+  data[ci].items[ii].tel=document.getElementById('ct-'+ci+'-'+ii+'-t')?.value||'';
+  data[ci].items[ii].notas=document.getElementById('ct-'+ci+'-'+ii+'-o')?.value||'';
+  saveContactos(data);
+}
+
+function addContacto(ci){
+  const data=loadContactos();
+  data[ci].items.push({nombre:'',tel:'',notas:''});
+  saveContactos(data);
+  renderLab();
+}
+
 // ── TABS ──
 const PTITLES={obs:'🌿 Observar',tareas:'✅ Tareas · Calendario',mapa:'🗺 Mapa',hist:'📋 Historial',clima:'🌡 Clima',fichas:'🍇 Fichas',lab:'📊 Laboratorio'};
 const PTABS=['obs','tareas','mapa','hist','clima','fichas','lab'];
@@ -1731,6 +1822,9 @@ function fmtDate(ts){return new Date(ts).toLocaleDateString('es-ES',{day:'2-digi
 // Init
 document.querySelectorAll('.panel').forEach(p=>p.style.display='none');
 document.getElementById('p-obs').style.display='block';
+</script>
+<script>
+if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){});});}
 </script>
 </body>
 </html>
